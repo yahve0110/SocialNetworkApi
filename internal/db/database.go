@@ -82,7 +82,7 @@ func CreateAllTables(db *sql.DB) error {
 	createTables := `
 	CREATE TABLE IF NOT EXISTS users (
 		user_id TEXT PRIMARY KEY UNIQUE,
-		nickname TEXT UNIQUE NOT NULL,
+		username TEXT UNIQUE NOT NULL,
 		first_name TEXT NOT NULL,
 		last_name TEXT NOT NULL,
 		email TEXT NOT NULL UNIQUE,
@@ -91,24 +91,25 @@ func CreateAllTables(db *sql.DB) error {
 		birth_date DATE NOT NULL,
 		profile_picture TEXT ,
 		role TEXT DEFAULT 'user',
-		about TEXT
+		about TEXT,
+		privacy TEXT
 	);
 
 
 	CREATE TABLE IF NOT EXISTS posts (
-		post_id INTEGER PRIMARY KEY,
-		author_id INTEGER NOT NULL,
+		post_id TEXT PRIMARY KEY NOT NULL UNIQUE,
+		author_id TEXT NOT NULL ,
 		content TEXT NOT NULL,
 		post_created_at TIMESTAMP NOT NULL,
 		likes_count INTEGER NOT NULL,
+		privacy TEXT ,
 		image TEXT NOT NULL,
 		FOREIGN KEY (author_id) REFERENCES users(user_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS postLikes (
-		like_id INTEGER PRIMARY KEY,
-		post_id INTEGER NOT NULL,
-		user_id INTEGER NOT NULL,
+		post_id TEXT NOT NULL,
+		user_id TEXT NOT NULL UNIQUE,
 		FOREIGN KEY (post_id) REFERENCES posts(post_id),
 		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);
@@ -116,20 +117,20 @@ func CreateAllTables(db *sql.DB) error {
 
 
 	CREATE TABLE IF NOT EXISTS comments (
-		comment_id INTEGER PRIMARY KEY,
+		comment_id TEXT UNIQUE NOT NULL,
 		content TEXT NOT NULL,
 		comment_created_at TIMESTAMP NOT NULL,
-		author_id INTEGER NOT NULL,
-		post_id INTEGER NOT NULL,
+		author_id TEXT NOT NULL,
+		post_id TEXT NOT NULL,
+		author_nickname TEXT NOT NULL,
 		image TEXT NOT NULL,
 		FOREIGN KEY (author_id) REFERENCES users(user_id),
 		FOREIGN KEY (post_id) REFERENCES posts(post_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS CommentLikes (
-		like_id INTEGER PRIMARY KEY,
-		comment_id INTEGER NOT NULL,
-		user_id INTEGER NOT NULL,
+		comment_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
 		FOREIGN KEY (comment_id) REFERENCES comments(comment_id),
 		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);
@@ -142,14 +143,15 @@ func CreateAllTables(db *sql.DB) error {
 		FOREIGN KEY (profile_id) REFERENCES users(user_id)
 	);
 
-	CREATE TABLE IF NOT EXISTS follows (
-		follow_id INTEGER NOT NULL PRIMARY KEY,
-		user_followed_status TEXT NOT NULL,
-		user_followed INTEGER NOT NULL,
-		user_following INTEGER NOT NULL,
+	CREATE TABLE IF NOT EXISTS Followers (
+		follow_id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		user_followed_status ENUM('pending', 'accepted') NOT NULL,
+		user_followed TEXT NOT NULL,
+		user_following TEXT NOT NULL,
 		FOREIGN KEY (user_followed) REFERENCES users(user_id),
 		FOREIGN KEY (user_following) REFERENCES users(user_id)
 	);
+
 
 	CREATE TABLE IF NOT EXISTS friendship (
 		friendship_id INTEGER NOT NULL PRIMARY KEY,
@@ -222,7 +224,14 @@ func CreateAllTables(db *sql.DB) error {
 
 	);
 
-
+	CREATE TABLE IF NOT EXISTS sessions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id TEXT NOT NULL,
+		session_id TEXT NOT NULL,
+		expiration_time DATETIME NOT NULL,
+		FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+		UNIQUE(session_id)
+	);
 
 
     `

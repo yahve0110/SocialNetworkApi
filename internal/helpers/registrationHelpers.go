@@ -3,6 +3,8 @@ package helpers
 import (
 	"database/sql"
 	"fmt"
+	"social/internal/models"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -36,7 +38,6 @@ func ValidateCredentials(db *sql.DB, email, nickname string) error {
 	return nil
 }
 
-
 // IsEmailUnique checks if the given email is unique in the database
 func IsEmailUnique(db *sql.DB, email string) (bool, error) {
 	var count int
@@ -50,9 +51,22 @@ func IsEmailUnique(db *sql.DB, email string) (bool, error) {
 // IsNicknameUnique checks if the given nickname is unique in the database
 func IsNicknameUnique(db *sql.DB, nickname string) (bool, error) {
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE nickname = ?", nickname).Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", nickname).Scan(&count)
 	if err != nil {
 		return false, err
 	}
 	return count == 0, nil
+}
+
+
+ //inser user in database
+func InsertUser(dbConnection *sql.DB, user models.User) error {
+	if user.Email == "" || user.Password == ""  || user.Username == ""{
+		return fmt.Errorf("email and password are required")
+	}
+	_, err := dbConnection.Exec(`
+		INSERT INTO users (user_id, Username, first_name, last_name, email, password, gender, birth_date, profile_picture, role)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, user.UserID, user.Username, user.FirstName, user.LastName, user.Email, user.Password, user.Gender, user.BirthDate, user.ProfilePicture, user.Role)
+	return err
 }

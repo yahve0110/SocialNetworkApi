@@ -1,10 +1,10 @@
 package myrouter
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 )
-
 
 // MiddlewareFunc defines the type for middleware functions
 type MiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
@@ -26,14 +26,25 @@ type Router struct {
 func NewRouter() *Router {
 	return &Router{}
 }
-
-// Use registers middleware for the router
 func (r *Router) Use(middleware ...MiddlewareFunc) *Router {
-	for i := range r.routes {
-		r.routes[i].Middleware = append(r.routes[i].Middleware, middleware...)
-	}
-	return r
+    fmt.Println("Entering Use method")
+
+    for _, m := range middleware {
+        fmt.Printf("Middleware function: %p\n", m)
+    }
+
+    for i := range r.routes {
+        fmt.Printf("Before appending middleware to route %d: %v\n", i, r.routes[i].Middleware)
+        r.routes[i].Middleware = append(r.routes[i].Middleware, middleware...)
+        fmt.Printf("After appending middleware to route %d: %v\n", i, r.routes[i].Middleware)
+    }
+
+    fmt.Printf("Exiting Use method. Router address: %p\n", r)
+    return r
 }
+
+
+
 
 // Handle registers a handler for the specified path and method
 func (r *Router) Handle(method, path string, handler http.HandlerFunc, middleware ...MiddlewareFunc) *Router {
@@ -97,4 +108,12 @@ func matchPath(route, path string) bool {
 	return true
 }
 
-
+func (r *Router) PrintDetails() {
+	fmt.Printf("Number of routes: %d\n", len(r.routes))
+	for i, route := range r.routes {
+		fmt.Printf("Route %d:\n", i+1)
+		fmt.Printf("  Path: %s\n", route.Path)
+		fmt.Printf("  Method: %s\n", route.Method)
+		fmt.Printf("  Middleware: %v\n", route.Middleware)
+	}
+}

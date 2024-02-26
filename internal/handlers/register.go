@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	database "social/internal/db"
 	"social/internal/helpers"
 	"social/internal/models"
-	"social/internal/db"
+
 	"github.com/google/uuid"
 )
 
@@ -37,17 +38,16 @@ func UserRegister(w http.ResponseWriter, r *http.Request) {
 	dbConnection := database.DB
 
 	// Validate email and nickname uniqueness
-	err = helpers.ValidateCredentials(dbConnection, newUser.Email, newUser.Nickname)
+	err = helpers.ValidateCredentials(dbConnection, newUser.Email, newUser.Username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-fmt.Println(newUser)
+
+	newUser.Role = "user"
+
 	// Insert user into the database
-	_, err = dbConnection.Exec(`
-		INSERT INTO users (user_id, nickname, first_name, last_name, email, password, gender, birth_date, profile_picture, role)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, newUser.UserID, newUser.Nickname, newUser.FirstName, newUser.LastName, newUser.Email, newUser.Password, newUser.Gender, newUser.BirthDate, newUser.ProfilePicture, newUser.Role)
+	err = helpers.InsertUser(dbConnection, newUser)
 	if err != nil {
 		// Log the error for debugging purposes
 		fmt.Println("Error inserting user into database:", err)
