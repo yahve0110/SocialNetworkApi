@@ -144,8 +144,7 @@ func CreateAllTables(db *sql.DB) error {
 	);
 
 	CREATE TABLE IF NOT EXISTS Followers (
-		follow_id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-		user_followed_status ENUM('pending', 'accepted') NOT NULL,
+		user_followed_status TEXT NOT NULL,
 		user_followed TEXT NOT NULL,
 		user_following TEXT NOT NULL,
 		FOREIGN KEY (user_followed) REFERENCES users(user_id),

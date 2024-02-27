@@ -65,8 +65,8 @@ func InsertUser(dbConnection *sql.DB, user models.User) error {
 		return fmt.Errorf("email and password are required")
 	}
 	_, err := dbConnection.Exec(`
-		INSERT INTO users (user_id, Username, first_name, last_name, email, password, gender, birth_date, profile_picture, role)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, user.UserID, user.Username, user.FirstName, user.LastName, user.Email, user.Password, user.Gender, user.BirthDate, user.ProfilePicture, user.Role)
+		INSERT INTO users (user_id, Username, first_name, last_name, email, password, gender, birth_date, profile_picture, role,about,privacy)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, user.UserID, user.Username, user.FirstName, user.LastName, user.Email, user.Password, user.Gender, user.BirthDate, user.ProfilePicture, user.Role,user.About,user.Privacy)
 	return err
 }

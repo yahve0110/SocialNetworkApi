@@ -44,7 +44,12 @@ func UserRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//set default user role
 	newUser.Role = "user"
+
+	//default user proile privacy
+	newUser.Privacy = "private"
+
 
 	// Insert user into the database
 	err = helpers.InsertUser(dbConnection, newUser)

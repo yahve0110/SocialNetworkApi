@@ -12,5 +12,6 @@ type User struct {
 	ProfilePicture string `json:"profilePicture"`
 	Role string `json:"role"`
 	About string `json:"about"`
+	Privacy string `json:"privacy"`
 
 }
