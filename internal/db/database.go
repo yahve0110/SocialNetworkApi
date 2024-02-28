@@ -161,31 +161,80 @@ func CreateAllTables(db *sql.DB) error {
 		FOREIGN KEY (user1_id) REFERENCES users(user_id),
 		FOREIGN KEY (user2_id) REFERENCES users(user_id)
 	);
-
 	CREATE TABLE IF NOT EXISTS groups (
-		group_id INTEGER NOT NULL PRIMARY KEY,
+		group_id TEXT NOT NULL PRIMARY KEY,
 		group_name TEXT NOT NULL,
 		group_description TEXT NOT NULL,
 		group_image TEXT NOT NULL,
 		creation_date TIMESTAMP NOT NULL,
-		creator_id INTEGER NOT NULL,
+		creator_id TEXT NOT NULL,
 		FOREIGN KEY (creator_id) REFERENCES users(user_id)
 	);
 
-	CREATE TABLE IF NOT EXISTS groups_members (
-		member_id INTEGER NOT NULL PRIMARY KEY,
-		group_id INTEGER NOT NULL,
+	CREATE TABLE IF NOT EXISTS group_members (
+		group_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
 		FOREIGN KEY (group_id) REFERENCES groups(group_id),
-		FOREIGN KEY (member_id) REFERENCES users(user_id)
+		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);
 
-	CREATE TABLE IF NOT EXISTS Group_event (
-		group_event_id INTEGER NOT NULL PRIMARY KEY,
-		group_id INTEGER NOT NULL,
+	CREATE TABLE IF NOT EXISTS group_invitations (
+		group_id TEXT NOT NULL,
+		sender_id TEXT NOT NULL,
+		receiver_id TEXT NOT NULL,
+		status TEXT NOT NULL, -- 'Pending', 'Accepted', 'Declined'
+		FOREIGN KEY (group_id) REFERENCES groups(group_id),
+		FOREIGN KEY (sender_id) REFERENCES users(user_id),
+		FOREIGN KEY (receiver_id) REFERENCES users(user_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS group_requests (
+		request_id TEXT NOT NULL PRIMARY KEY,
+		group_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
+		status TEXT NOT NULL, -- 'Pending', 'Accepted', 'Declined'
+		FOREIGN KEY (group_id) REFERENCES groups(group_id),
+		FOREIGN KEY (user_id) REFERENCES users(user_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS group_posts (
+		post_id TEXT NOT NULL PRIMARY KEY,
+		group_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
+		content TEXT NOT NULL,
+		post_date TIMESTAMP NOT NULL,
+		FOREIGN KEY (group_id) REFERENCES groups(group_id),
+		FOREIGN KEY (user_id) REFERENCES users(user_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS group_comments (
+		comment_id TEXT NOT NULL PRIMARY KEY,
+		post_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
+		content TEXT NOT NULL,
+		comment_date TIMESTAMP NOT NULL,
+		FOREIGN KEY (post_id) REFERENCES group_posts(post_id),
+		FOREIGN KEY (user_id) REFERENCES users(user_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS group_events (
+		event_id TEXT NOT NULL PRIMARY KEY,
+		group_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
 		title TEXT NOT NULL,
 		description TEXT NOT NULL,
-		event_datetime TEXT NOT NULL,
-		FOREIGN KEY (group_id) REFERENCES groups(group_id)
+		day_time DATETIME NOT NULL,
+		FOREIGN KEY (group_id) REFERENCES groups(group_id),
+		FOREIGN KEY (user_id) REFERENCES users(user_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS event_participants (
+		event_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
+		response TEXT NOT NULL, -- 'Going', 'Not Going'
+		PRIMARY KEY (event_id, user_id),
+		FOREIGN KEY (event_id) REFERENCES group_events(event_id),
+		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS chat (
