@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	globals "social/internal"
 	database "social/internal/db"
 	"social/internal/helpers"
 	"social/internal/models"
@@ -13,14 +14,12 @@ import (
 
 func UserRegister(w http.ResponseWriter, r *http.Request) {
 	var newUser models.User
-	fmt.Println("entered")
 
 	err := json.NewDecoder(r.Body).Decode(&newUser)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
 	// Generate unique UserId
 	newUser.UserID = uuid.New().String()
 
@@ -48,8 +47,19 @@ func UserRegister(w http.ResponseWriter, r *http.Request) {
 	newUser.Role = "user"
 
 	//default user proile privacy
-	newUser.Privacy = "private"
+	newUser.Privacy = "public"
 
+	imageBase64 := newUser.ProfilePicture
+	if imageBase64 != "" {
+        cloudinaryURL, err := helpers.ImageToCloud(imageBase64, w)
+        if err != nil {
+            // Handle error
+            return
+        }
+        newUser.ProfilePicture = cloudinaryURL
+    } else {
+        newUser.ProfilePicture = globals.DefaultAvatarURL
+    }
 
 	// Insert user into the database
 	err = helpers.InsertUser(dbConnection, newUser)

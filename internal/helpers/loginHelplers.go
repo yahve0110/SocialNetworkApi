@@ -9,6 +9,14 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
+type CookieData struct {
+	Name     string
+	Value    string
+	Expires  time.Time
+	HttpOnly bool
+	SameSite http.SameSite
+	Secure   bool
+}
 
 // IsUsernameExists checks if the given username exists in the database
 func IsUsernameExists(db *sql.DB, username string) (bool, error) {
@@ -66,7 +74,7 @@ func SaveSessionInfo(db *sql.DB, userID, sessionID string, expirationTime time.T
 	return nil
 }
 
-func CreateSession(w http.ResponseWriter, db *sql.DB, username string) error {
+func CreateSession(w http.ResponseWriter, db *sql.DB, username string) (*http.Cookie, error) {
 	// Generate a UUID for the session ID
 	sessionID := uuid.New().String()
 
@@ -74,27 +82,31 @@ func CreateSession(w http.ResponseWriter, db *sql.DB, username string) error {
 	var userID string
 	err := db.QueryRow("SELECT user_id FROM users WHERE username = ?", username).Scan(&userID)
 	if err != nil {
-		return fmt.Errorf("error getting user ID for username %s: %v", username, err)
+		return nil, fmt.Errorf("error getting user ID for username %s: %v", username, err)
 	}
 
-	fmt.Println("here")
 	// Set a cookie with the session ID
 	expiration := time.Now().Add(24 * time.Hour) // Adjust the expiration time as needed
-	cookie := http.Cookie{
+	cookie := &http.Cookie{
 		Name:     "sessionID",
 		Value:    sessionID,
 		Expires:  expiration,
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	}
-	http.SetCookie(w, &cookie)
 
 	// Save session information in the database
 	err = SaveSessionInfo(db, userID, sessionID, expiration)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	// Set the cookie in the response
+	http.SetCookie(w, cookie)
+
+	// Возвращаем данные куки
+	return cookie, nil
 }
 
 func Logout(w http.ResponseWriter, r *http.Request, db *sql.DB) error {

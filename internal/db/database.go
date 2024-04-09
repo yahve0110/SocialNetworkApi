@@ -109,7 +109,7 @@ func CreateAllTables(db *sql.DB) error {
 
 	CREATE TABLE IF NOT EXISTS postLikes (
 		post_id TEXT NOT NULL,
-		user_id TEXT NOT NULL UNIQUE,
+		user_id TEXT NOT NULL ,
 		FOREIGN KEY (post_id) REFERENCES posts(post_id),
 		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);
@@ -200,41 +200,61 @@ func CreateAllTables(db *sql.DB) error {
 	CREATE TABLE IF NOT EXISTS group_posts (
 		post_id TEXT NOT NULL PRIMARY KEY,
 		group_id TEXT NOT NULL,
-		user_id TEXT NOT NULL,
+		author_id TEXT NOT NULL,
 		content TEXT NOT NULL,
 		post_date TIMESTAMP NOT NULL,
 		FOREIGN KEY (group_id) REFERENCES groups(group_id),
-		FOREIGN KEY (user_id) REFERENCES users(user_id)
+		FOREIGN KEY (author_id) REFERENCES users(user_id)
 	);
 
-	CREATE TABLE IF NOT EXISTS group_comments (
-		comment_id TEXT NOT NULL PRIMARY KEY,
+	CREATE TABLE IF NOT EXISTS group_post_likes (
 		post_id TEXT NOT NULL,
 		user_id TEXT NOT NULL,
-		content TEXT NOT NULL,
-		comment_date TIMESTAMP NOT NULL,
 		FOREIGN KEY (post_id) REFERENCES group_posts(post_id),
 		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);
 
-	CREATE TABLE IF NOT EXISTS group_events (
-		event_id TEXT NOT NULL PRIMARY KEY,
-		group_id TEXT NOT NULL,
+
+	CREATE TABLE IF NOT EXISTS group_comments (
+		comment_id TEXT NOT NULL PRIMARY KEY,
+		post_id TEXT NOT NULL,
+		author_id TEXT NOT NULL,
+		content TEXT NOT NULL,
+		comment_date TIMESTAMP NOT NULL,
+		FOREIGN KEY (post_id) REFERENCES group_posts(post_id),
+		FOREIGN KEY (author_id) REFERENCES users(user_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS group_comment_likes (
+		comment_id TEXT NOT NULL,
 		user_id TEXT NOT NULL,
-		title TEXT NOT NULL,
-		description TEXT NOT NULL,
-		day_time DATETIME NOT NULL,
-		FOREIGN KEY (group_id) REFERENCES groups(group_id),
+		FOREIGN KEY (comment_id) REFERENCES group_comments(comment_id),
 		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);
 
-	CREATE TABLE IF NOT EXISTS event_participants (
-		event_id TEXT NOT NULL,
-		user_id TEXT NOT NULL,
-		response TEXT NOT NULL, -- 'Going', 'Not Going'
-		PRIMARY KEY (event_id, user_id),
+	CREATE TABLE IF NOT EXISTS group_events (
+		event_id TEXT PRIMARY KEY,
+		group_id TEXT NOT NULL,
+		title TEXT NOT NULL,
+		description TEXT,
+		date_time TIMESTAMP,
+		FOREIGN KEY (group_id) REFERENCES groups(group_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS event_going_members (
+		event_id TEXT,
+		member_id TEXT,
+		PRIMARY KEY (event_id, member_id),
 		FOREIGN KEY (event_id) REFERENCES group_events(event_id),
-		FOREIGN KEY (user_id) REFERENCES users(user_id)
+		FOREIGN KEY (member_id) REFERENCES users(user_id)
+	);
+
+	CREATE TABLE IF NOT EXISTS event_not_going_members (
+		event_id TEXT,
+		member_id TEXT,
+		PRIMARY KEY (event_id, member_id),
+		FOREIGN KEY (event_id) REFERENCES group_events(event_id),
+		FOREIGN KEY (member_id) REFERENCES users(user_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS chat (

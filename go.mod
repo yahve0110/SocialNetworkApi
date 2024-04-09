@@ -10,6 +10,9 @@ require (
 )
 
 require (
+	github.com/cloudinary/cloudinary-go/v2 v2.7.0 // indirect
+	github.com/creasty/defaults v1.5.1 // indirect
+	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect

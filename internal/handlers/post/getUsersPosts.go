@@ -27,6 +27,8 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+
+
 	// Get all posts created by the specified user
 	userPosts, err := GetPostsByUserID(dbConnection, userID)
 	if err != nil {
@@ -43,48 +45,61 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(userPosts)
 }
 
-// GetPostsByUserID retrieves all posts created by a user with the given user ID
+// GetPostsByUserID retrieves all posts created by a user with the given user ID, sorted by creation date (newest first)
 func GetPostsByUserID(db *sql.DB, userID string) ([]models.Post, error) {
-	rows, err := db.Query(`
-	SELECT
-	posts.post_id,
-    users.user_id,
-    users.username,
-    posts.content,
-    posts.post_created_at,
-	COUNT(postLikes.user_id) AS tlikes_count,
-    posts.image
-FROM
-    posts
-JOIN users ON posts.author_id = users.user_id
-LEFT JOIN postLikes ON posts.post_id = postLikes.post_id
-WHERE
-    posts.author_id = ?
-GROUP BY
-    posts.post_id, users.user_id, users.username, posts.content, posts.post_created_at, posts.likes_count, posts.image
-    `, userID)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching posts: %v", err)
-	}
-	defer rows.Close()
+    query := `
+        SELECT
+            posts.post_id,
+            users.user_id,
+            users.username,
+            users.first_name,
+            users.last_name,
+            posts.content,
+            posts.post_created_at,
+            COUNT(postLikes.user_id) AS tlikes_count,
+            posts.image
+        FROM
+            posts
+        JOIN users ON posts.author_id = users.user_id
+        LEFT JOIN postLikes ON posts.post_id = postLikes.post_id
+        WHERE
+            posts.author_id = ?
+        GROUP BY
+            posts.post_id, users.user_id, users.username, users.first_name, users.last_name, posts.content, posts.post_created_at, posts.likes_count, posts.image
+        ORDER BY
+            posts.post_created_at DESC
+    `
+    rows, err := db.Query(query, userID)
+    if err != nil {
+        return nil, fmt.Errorf("error fetching posts: %v", err)
+    }
+    defer rows.Close()
 
-	var posts []models.Post
-	for rows.Next() {
-		var post models.Post
-		err := rows.Scan(
-			&post.PostID,
-			&post.AuthorID,
-			&post.AuthorNickname,
-			&post.Content,
-			&post.CreatedAt,
-			&post.LikesCount, // Use LikesCount for total_likes
-			&post.Image,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("error scanning post rows: %v", err)
-		}
-		posts = append(posts, post)
-	}
+    var posts []models.Post
+    for rows.Next() {
+        var post models.Post
+        err := rows.Scan(
+            &post.PostID,
+            &post.AuthorID,
+            &post.AuthorNickname,
+            &post.AuthorFirstName,
+            &post.AuthorLastName,
+            &post.Content,
+            &post.CreatedAt,
+            &post.LikesCount,
+            &post.Image,
+        )
+        if err != nil {
+            return nil, fmt.Errorf("error scanning post rows: %v", err)
+        }
+        // Add the post to the list
+        posts = append(posts, post)
+    }
 
-	return posts, nil
+    // Check if posts were obtained
+    if len(posts) == 0 {
+        return nil, fmt.Errorf("no posts found for user ID: %s", userID)
+    }
+
+    return posts, nil
 }

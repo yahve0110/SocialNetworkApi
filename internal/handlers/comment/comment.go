@@ -3,15 +3,13 @@ package commentHandlers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	database "social/internal/db"
 	"social/internal/helpers"
 	"social/internal/models"
 	"time"
-	"github.com/google/uuid"
 )
-
-
 
 // Modify the AddComment function
 func AddComment(w http.ResponseWriter, r *http.Request) {
@@ -57,27 +55,46 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set the author ID and nickname for the new comment
+	// Set the author ID for the new comment
 	newComment.AuthorID = userID
 
-	// Fetch the author's nickname
-	err = dbConnection.QueryRow("SELECT username FROM users WHERE user_id = ?", userID).Scan(&newComment.AuthorNickname)
+	// Fetch the author's first name and last name
+	var authorFirstName, authorLastName, authorAvatar string
+	err = dbConnection.QueryRow("SELECT first_name, last_name, profile_picture FROM users WHERE user_id = ?", userID).Scan(&authorFirstName, &authorLastName, &authorAvatar)
 	if err != nil {
 		// Log the error for debugging purposes
-		fmt.Println("Error fetching author's nickname:", err)
+		fmt.Println("Error fetching author's information:", err)
 		// Return an HTTP response with a 500 Internal Server Error status
-		http.Error(w, "Error fetching author's nickname", http.StatusInternalServerError)
+		http.Error(w, "Error fetching author's information", http.StatusInternalServerError)
 		return
 	}
+
+
+    //upload comment image to cloud storage
+    commentImageBase64 := newComment.Image
+	if commentImageBase64 != "" {
+        cloudinaryURL, err := helpers.ImageToCloud(commentImageBase64, w)
+        if err != nil {
+            // Handle error
+            return
+        }
+        newComment.Image = cloudinaryURL
+    }
+
+
+	// Set the author's first name and last name for the new comment
+	newComment.AuthorFirstName = authorFirstName
+	newComment.AuthorLastName = authorLastName
+	newComment.AuthorAvatar = authorAvatar
 
 	// Set the comment creation timestamp
 	newComment.CreatedAt = time.Now().UTC().Format(time.RFC3339)
 
 	// Insert the new comment into the database
 	_, err = dbConnection.Exec(`
-		INSERT INTO comments (comment_id, content, comment_created_at, author_id, post_id, author_nickname, image)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, newComment.CommentID, newComment.Content, newComment.CreatedAt, newComment.AuthorID, newComment.PostID, newComment.AuthorNickname, newComment.Image)
+        INSERT INTO comments (comment_id, content, comment_created_at, author_id, post_id, author_nickname, image)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, newComment.CommentID, newComment.Content, newComment.CreatedAt, newComment.AuthorID, newComment.PostID, newComment.AuthorNickname, newComment.Image)
 	if err != nil {
 		// Log the error for debugging purposes
 		fmt.Println("Error inserting comment into database:", err)
@@ -86,7 +103,8 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with a success message
+	// Respond with the created comment in the response body
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(fmt.Sprintf("Comment created with ID %s", newComment.CommentID)))
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(newComment)
 }

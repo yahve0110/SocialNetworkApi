@@ -59,8 +59,9 @@ func IsNicknameUnique(db *sql.DB, nickname string) (bool, error) {
 }
 
 
- //inser user in database
+ //insert user in database
 func InsertUser(dbConnection *sql.DB, user models.User) error {
+	fmt.Println(user)
 	if user.Email == "" || user.Password == ""  || user.Username == ""{
 		return fmt.Errorf("email and password are required")
 	}

@@ -91,3 +91,16 @@ func GetUserByID(db *sql.DB, userID string) (models.User, error) {
 	}
 	return user, nil
 }
+
+func GetUserIDByUsername(db *sql.DB, username string) (string, error) {
+    var userID string
+
+    // Prepare the SQL statement to select the user ID based on the username
+    query := "SELECT user_id FROM users WHERE username = ? LIMIT 1"
+    err := db.QueryRow(query, username).Scan(&userID)
+    if err != nil {
+        return "", err
+    }
+
+    return userID, nil
+}

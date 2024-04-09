@@ -2,6 +2,9 @@ package models
 
 type Comment struct {
 	CommentID string `json:"comment_id"`
+	AuthorFirstName string `json:"author_first_name"`
+	AuthorLastName string `json:"author_last_name"`
+	AuthorAvatar string `json:"author_avatar"`
 	Content   string `json:"content"`
 	AuthorID  string `json:"author_id"`
 	PostID    string   `json:"post_id"`

@@ -151,3 +151,18 @@ func GroupRequestExists(db *sql.DB, groupID, userID string) (bool, error) {
 
 	return count > 0, nil
 }
+
+
+// IsUserPostCreator checks if a user is the creator of the specified post
+func IsUserPostCreator(db *sql.DB, userID, postID string) (bool, error) {
+	// Query the posts table to check if the user is the creator
+	query := "SELECT EXISTS(SELECT 1 FROM group_posts WHERE author_id = ? AND post_id = ?)"
+	var exists bool
+	err := db.QueryRow(query, userID, postID).Scan(&exists)
+	if err != nil {
+		log.Printf("Error checking post creator: %v", err)
+		return false, err
+	}
+
+	return exists, nil
+}

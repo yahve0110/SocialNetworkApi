@@ -1,22 +1,27 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
-	database "social/internal/db"
+	"social/internal/db"
 	"time"
 )
 
+type SessionRequest struct {
+	SessionID string `json:"sessionId"`
+}
+
 func IsSessionValid(w http.ResponseWriter, r *http.Request) {
-	// Retrieve session ID from cookies
-	cookie, err := r.Cookie("sessionID")
+	// Decode the JSON request body into SessionRequest struct
+	var sessionReq SessionRequest
+	err := json.NewDecoder(r.Body).Decode(&sessionReq)
 	if err != nil {
-		// Cookie not found, session is invalid
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	sessionID := cookie.Value
+	sessionID := sessionReq.SessionID
 
 	fmt.Println("Session ID: ", sessionID)
 	dbConnection := database.DB

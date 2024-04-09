@@ -5,8 +5,14 @@ import (
 	commentHandlers "social/internal/handlers/comment"
 	followHandlers "social/internal/handlers/follows"
 	groupHandlers "social/internal/handlers/group"
+	groupPostCommentHandlers "social/internal/handlers/group/groupComments"
+	groupPostHandlers "social/internal/handlers/group/groupPosts"
+	groupInviteHandlers "social/internal/handlers/group/invitesAndRequests"
 	postHandler "social/internal/handlers/post"
+	userHandlers "social/internal/handlers/user"
 	"social/internal/middleware"
+
+	groupEventHandlers "social/internal/handlers/group/groupEvents"
 )
 
 // DefineRoutes defines the routes and middleware
@@ -17,18 +23,22 @@ func DefineRoutes() *Router {
 
 	router.Handle("POST", "/register", handlers.UserRegister)
 	router.Handle("POST", "/login", handlers.UserLogin)
-	router.Handle("GET", "/logout", handlers.UserLogout)
+	router.Handle("POST", "/logout", handlers.UserLogout)
 
 	router.Handle("POST", "/addpost", middleware.LogMiddleware(postHandler.AddPost), middleware.AuthMiddleware)
-	router.Handle("GET", "/getposts", middleware.LogMiddleware(postHandler.GetUserPosts), middleware.AuthMiddleware)
+	router.Handle("DELETE", "/deletePost", middleware.LogMiddleware(postHandler.DeletePostHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/getposts", middleware.LogMiddleware(postHandler.GetUserPosts), middleware.AuthMiddleware)
 	router.Handle("POST", "/addPostLike", middleware.LogMiddleware(postHandler.AddPostLike), middleware.AuthMiddleware)
 
 	router.Handle("POST", "/addcomment", middleware.LogMiddleware(commentHandlers.AddComment), middleware.AuthMiddleware)
+	router.Handle("DELETE", "/deleteComment", middleware.LogMiddleware(commentHandlers.DeleteComment), middleware.AuthMiddleware)
 	router.Handle("GET", "/comments", middleware.LogMiddleware(commentHandlers.GetCommentsForPost), middleware.AuthMiddleware)
 	router.Handle("POST", "/addCommentLike", middleware.LogMiddleware(commentHandlers.AddCommentLike), middleware.AuthMiddleware)
 
-	router.Handle("GET", "/isSessionValid", middleware.LogMiddleware(handlers.IsSessionValid))
+	router.Handle("POST", "/isSessionValid", middleware.LogMiddleware(handlers.IsSessionValid))
+	router.Handle("GET", "/getUserInfo", middleware.LogMiddleware(userHandlers.GetUserInfo), middleware.AuthMiddleware)
 	router.Handle("GET", "/getAllUsers", middleware.LogMiddleware(handlers.GetAllUsers), middleware.AuthMiddleware)
+	router.Handle("GET", "/getUserInfoById", middleware.LogMiddleware(userHandlers.GetUserInfoById), middleware.AuthMiddleware)
 
 	router.Handle("POST", "/followUser", middleware.LogMiddleware(followHandlers.FollowUser), middleware.AuthMiddleware)
 	router.Handle("POST", "/unfollowUser", middleware.LogMiddleware(followHandlers.UnfollowUserHandler), middleware.AuthMiddleware)
@@ -39,15 +49,27 @@ func DefineRoutes() *Router {
 
 	router.Handle("POST", "/createGroup", middleware.LogMiddleware(groupHandlers.CreateGroupHandler), middleware.AuthMiddleware)
 	router.Handle("GET", "/getallGroups", middleware.LogMiddleware(groupHandlers.GetAllGroupHandler), middleware.AuthMiddleware)
-	router.Handle("POST", "/inviteToGroup", middleware.LogMiddleware(groupHandlers.SendGroupInvitationHandler), middleware.AuthMiddleware)
-	router.Handle("GET", "/checkGroupInvites", middleware.LogMiddleware(groupHandlers.GetUserInvitationsHandler), middleware.AuthMiddleware)
-	router.Handle("POST", "/acceptGroupInvite", middleware.LogMiddleware(groupHandlers.AcceptGroupInvitationHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/inviteToGroup", middleware.LogMiddleware(groupInviteHandlers.SendGroupInvitationHandler), middleware.AuthMiddleware)
+	router.Handle("GET", "/checkGroupInvites", middleware.LogMiddleware(groupInviteHandlers.GetUserInvitationsHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/acceptGroupInvite", middleware.LogMiddleware(groupInviteHandlers.AcceptGroupInvitationHandler), middleware.AuthMiddleware)
 	router.Handle("POST", "/leaveGroup", middleware.LogMiddleware(groupHandlers.LeaveGroupHandler), middleware.AuthMiddleware)
-	router.Handle("POST", "/decliceGroupInvite", middleware.LogMiddleware(groupHandlers.RefuseGroupInvitationHandler), middleware.AuthMiddleware)
-	router.Handle("POST", "/sendGroupEnterRequest", middleware.LogMiddleware(groupHandlers.SendGroupRequestHandler), middleware.AuthMiddleware)
-	router.Handle("POST", "/acceptGroupEnterRequest", middleware.LogMiddleware(groupHandlers.AcceptGroupRequestHandler), middleware.AuthMiddleware)
-	router.Handle("POST", "/getAllGroupEnterRequests", middleware.LogMiddleware(groupHandlers.GetAllGroupRequestsHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/decliceGroupInvite", middleware.LogMiddleware(groupInviteHandlers.RefuseGroupInvitationHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/sendGroupEnterRequest", middleware.LogMiddleware(groupInviteHandlers.SendGroupRequestHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/acceptGroupEnterRequest", middleware.LogMiddleware(groupInviteHandlers.AcceptGroupRequestHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/getAllGroupEnterRequests", middleware.LogMiddleware(groupInviteHandlers.GetAllGroupRequestsHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/createGroupPost", middleware.LogMiddleware(groupPostHandlers.CreateGroupPostHandler), middleware.AuthMiddleware)
+	router.Handle("GET", "/getAllGroupPosts", middleware.LogMiddleware(groupPostHandlers.GetAllGroupPostsHandler), middleware.AuthMiddleware)
+	router.Handle("DELETE", "/deleteGroupPost", middleware.LogMiddleware(groupPostHandlers.DeleteGroupPostHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/addGroupPostComment", middleware.LogMiddleware(groupPostCommentHandlers.AddGroupPostCommentHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/addGroupPostLike", middleware.LogMiddleware(groupPostHandlers.LikeGroupPostHandler), middleware.AuthMiddleware)
+	router.Handle("GET", "/getGroupPostComments", middleware.LogMiddleware(groupPostCommentHandlers.GetGroupPostCommentsHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/addGroupCommentLike", middleware.LogMiddleware(groupPostCommentHandlers.LikeGroupCommentHandler), middleware.AuthMiddleware)
+	router.Handle("DELETE", "/deleteGroupComment", middleware.LogMiddleware(groupPostCommentHandlers.DeleteGroupCommentHandler), middleware.AuthMiddleware)
+
+	router.Handle("POST", "/createEvent", middleware.LogMiddleware(groupEventHandlers.CreateGroupEventHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/joinEvent", middleware.LogMiddleware(groupEventHandlers.JoinGroupEventHandler), middleware.AuthMiddleware)
+	router.Handle("POST", "/declineEvent", middleware.LogMiddleware(groupEventHandlers.DeclineEventHandler), middleware.AuthMiddleware)
+	router.Handle("GET", "/getGroupEvents", middleware.LogMiddleware(groupEventHandlers.GetGroupEvents), middleware.AuthMiddleware)
 
 	return router
 }
-  
