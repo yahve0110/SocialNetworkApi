@@ -24,6 +24,8 @@ func DefineRoutes() *Router {
 	router.Handle("POST", "/register", handlers.UserRegister)
 	router.Handle("POST", "/login", handlers.UserLogin)
 	router.Handle("POST", "/logout", handlers.UserLogout)
+	router.Handle("POST", "/privacyUpdate", middleware.LogMiddleware(userHandlers.UpdatePrivacy), middleware.AuthMiddleware)
+
 
 	router.Handle("POST", "/addpost", middleware.LogMiddleware(postHandler.AddPost), middleware.AuthMiddleware)
 	router.Handle("DELETE", "/deletePost", middleware.LogMiddleware(postHandler.DeletePostHandler), middleware.AuthMiddleware)

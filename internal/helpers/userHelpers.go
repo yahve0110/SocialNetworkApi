@@ -45,10 +45,22 @@ func IsUserProfilePublic(db *sql.DB, userID string) (string, error) {
 }
 
 func InsertFollowRequest(db *sql.DB, followerID, followedID string) error {
-	_, err := db.Exec("INSERT INTO Followers (user_followed_status, user_followed,user_following) VALUES (?, ?, ?)", "pending", followedID, followerID)
+	// Check if the follow request already exists
+	var count int
+	row := db.QueryRow("SELECT COUNT(*) FROM Followers WHERE user_followed = ? AND user_following = ?", followedID, followerID)
+	err := row.Scan(&count)
 	if err != nil {
-		return fmt.Errorf("error inserting follow request: %v", err)
+		return fmt.Errorf("error checking existing follow request: %v", err)
 	}
+
+	// If the follow request does not exist, insert it
+	if count == 0 {
+		_, err := db.Exec("INSERT INTO Followers (user_followed_status, user_followed, user_following) VALUES (?, ?, ?)", "pending", followedID, followerID)
+		if err != nil {
+			return fmt.Errorf("error inserting follow request: %v", err)
+		}
+	}
+
 	return nil
 }
 

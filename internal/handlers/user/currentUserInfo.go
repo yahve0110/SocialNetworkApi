@@ -28,7 +28,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Execute the SQL query to get specific user fields
-	rows, err := dbConnection.Query("SELECT user_id, username, first_name, last_name, gender, birth_date, profile_picture, about, email FROM users WHERE user_id = ?", userID)
+	rows, err := dbConnection.Query("SELECT user_id, username, first_name, last_name, gender, birth_date, profile_picture, about, email, privacy FROM users WHERE user_id = ?", userID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error executing SQL query: %s", err), http.StatusInternalServerError)
 		return
@@ -38,7 +38,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	// Process the query result
 	var user models.User
 	for rows.Next() {
-		err := rows.Scan(&user.UserID, &user.Username, &user.FirstName, &user.LastName, &user.Gender, &user.BirthDate, &user.ProfilePicture, &user.About, &user.Email)
+		err := rows.Scan(&user.UserID, &user.Username, &user.FirstName, &user.LastName, &user.Gender, &user.BirthDate, &user.ProfilePicture, &user.About, &user.Email, &user.Privacy)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error scanning row: %s", err), http.StatusInternalServerError)
 			return
@@ -50,6 +50,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to marshal user data", http.StatusInternalServerError)
 			return
 		}
+		fmt.Println(jsonData)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonData)
