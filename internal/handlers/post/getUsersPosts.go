@@ -46,6 +46,7 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPostsByUserID retrieves all posts created by a user with the given user ID, sorted by creation date (newest first)
+// GetPostsByUserID retrieves all posts created by a user with the given user ID, sorted by creation date (newest first)
 func GetPostsByUserID(db *sql.DB, userID string) ([]models.Post, error) {
     query := `
         SELECT
@@ -56,6 +57,7 @@ func GetPostsByUserID(db *sql.DB, userID string) ([]models.Post, error) {
             users.last_name,
             posts.content,
             posts.post_created_at,
+            posts.privacy,
             COUNT(postLikes.user_id) AS tlikes_count,
             posts.image
         FROM
@@ -86,12 +88,23 @@ func GetPostsByUserID(db *sql.DB, userID string) ([]models.Post, error) {
             &post.AuthorLastName,
             &post.Content,
             &post.CreatedAt,
+            &post.Private,
             &post.LikesCount,
             &post.Image,
         )
         if err != nil {
             return nil, fmt.Errorf("error scanning post rows: %v", err)
         }
+
+        // Если пост имеет статус "almost private", получаем список пользователей, которым доступен пост
+        if post.Private == "almost private" {
+            allowedUsers, err := GetAllowedUsersForPost(db, post.PostID)
+            if err != nil {
+                return nil, fmt.Errorf("error getting allowed users for post ID %s: %v", post.PostID, err)
+            }
+            post.PrivateUsersArr = allowedUsers
+        }
+
         // Add the post to the list
         posts = append(posts, post)
     }
@@ -102,4 +115,26 @@ func GetPostsByUserID(db *sql.DB, userID string) ([]models.Post, error) {
     }
 
     return posts, nil
+}
+
+// GetAllowedUsersForPost возвращает массив идентификаторов пользователей, которым доступен пост с указанным идентификатором
+func GetAllowedUsersForPost(db *sql.DB, postID string) ([]string, error) {
+    query := `SELECT user_id FROM post_permissions WHERE post_id = ?`
+    rows, err := db.Query(query, postID)
+    if err != nil {
+        return nil, fmt.Errorf("error fetching allowed users for post ID %s: %v", postID, err)
+    }
+    defer rows.Close()
+
+    var allowedUsers []string
+    for rows.Next() {
+        var userID string
+        err := rows.Scan(&userID)
+        if err != nil {
+            return nil, fmt.Errorf("error scanning allowed users rows for post ID %s: %v", postID, err)
+        }
+        allowedUsers = append(allowedUsers, userID)
+    }
+
+    return allowedUsers, nil
 }

@@ -1,16 +1,16 @@
 package groupEventHandlers
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	database "social/internal/db"
-	"social/internal/helpers"
+    "encoding/json"
+    "log"
+    "net/http"
+    database "social/internal/db"
+    "social/internal/helpers"
 )
 
 type EventJoinRequest struct {
-	EventID  string `json:"event_id"`
-	MemberID string `json:"member_id"`
+    EventID  string `json:"event_id"`
+    MemberID string `json:"member_id"`
 }
 
 // JoinGroupEventHandler handles a user joining (going) an event
@@ -35,6 +35,7 @@ func JoinGroupEventHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     if !exists {
+        log.Printf("Event not found for ID: %s", joinRequest.EventID)
         http.Error(w, "Event not found", http.StatusNotFound)
         return
     }
@@ -42,12 +43,14 @@ func JoinGroupEventHandler(w http.ResponseWriter, r *http.Request) {
     // Check if the user is authenticated
     cookie, err := r.Cookie("sessionID")
     if err != nil {
+        log.Println("User not authenticated")
         http.Error(w, "User not authenticated", http.StatusUnauthorized)
         return
     }
 
     userID, err := helpers.GetUserIDFromSession(dbConnection, cookie.Value)
     if err != nil {
+        log.Println("User not authenticated")
         http.Error(w, "User not authenticated", http.StatusUnauthorized)
         return
     }
@@ -61,6 +64,7 @@ func JoinGroupEventHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     if alreadyJoined {
+        log.Printf("User with ID %s has already joined the event", userID)
         http.Error(w, "User has already joined the event", http.StatusConflict)
         return
     }
@@ -73,6 +77,7 @@ func JoinGroupEventHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     if alreadyNotJoined {
+        log.Printf("User with ID %s has already declined the event", userID)
         http.Error(w, "User has already declined event", http.StatusConflict)
         return
     }
@@ -80,11 +85,12 @@ func JoinGroupEventHandler(w http.ResponseWriter, r *http.Request) {
     // Add the user to the going members of the event
     err = AddUserToGoingMembers(dbConnection, userID, joinRequest.EventID)
     if err != nil {
-        log.Printf("Error adding user to going members: %v", err)
+        log.Printf("Error adding user with ID %s to going members: %v", userID, err)
         http.Error(w, "Internal server error", http.StatusInternalServerError)
         return
     }
 
+    log.Printf("User with ID %s joined the event", userID)
     w.WriteHeader(http.StatusOK)
     w.Write([]byte("User joined the event"))
 }

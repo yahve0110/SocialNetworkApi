@@ -65,23 +65,23 @@ func GetAllGroupPostsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Iterate through the group posts and fetch the count of likes for each post
 	for i := range groupPosts {
-		likeCount, err := getLikeCountForPost(dbConnection, groupPosts[i].PostID)
+		likesCount, err := getLikeCountForPost(dbConnection, groupPosts[i].PostID)
 		if err != nil {
 			log.Printf("Error fetching like count for post %s: %v", groupPosts[i].PostID, err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		groupPosts[i].LikeCount = likeCount
+		groupPosts[i].LikesCount = likesCount
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(groupPosts)
 }
 
-// getAllGroupPostsFromDatabase fetches all group posts for a group from the database
+// getAllGroupPostsFromDatabase fetches all group posts for a group from the database, ordered by creation date (newest first)
 func getAllGroupPostsFromDatabase(dbConnection *sql.DB, groupID string) ([]models.GroupPost, error) {
-	// Query all group posts for the group from the "group_posts" table
-	rows, err := dbConnection.Query("SELECT post_id, group_id, author_id, content, post_date FROM group_posts WHERE group_id = ?", groupID)
+	// Query all group posts for the group from the "group_posts" table, ordered by creation date (newest first)
+	rows, err := dbConnection.Query("SELECT gp.post_id, gp.group_id, gp.author_id, gp.content, gp.post_date,gp.group_post_img,  u.first_name, u.last_name FROM group_posts gp JOIN users u ON gp.author_id = u.user_id WHERE gp.group_id = ? ORDER BY gp.post_date DESC", groupID)
 	if err != nil {
 		log.Printf("Error querying group posts from database: %v", err)
 		return nil, err
@@ -92,7 +92,7 @@ func getAllGroupPostsFromDatabase(dbConnection *sql.DB, groupID string) ([]model
 	var groupPosts []models.GroupPost
 	for rows.Next() {
 		var groupPost models.GroupPost
-		if err := rows.Scan(&groupPost.PostID, &groupPost.GroupID, &groupPost.AuthorID, &groupPost.Content, &groupPost.CreatedAt); err != nil {
+		if err := rows.Scan(&groupPost.PostID, &groupPost.GroupID, &groupPost.AuthorID, &groupPost.Content, &groupPost.CreatedAt,&groupPost.Image, &groupPost.AuthorFirstName, &groupPost.AuthorLastName); err != nil {
 			log.Printf("Error scanning group post rows: %v", err)
 			return nil, err
 		}
@@ -112,12 +112,12 @@ func getAllGroupPostsFromDatabase(dbConnection *sql.DB, groupID string) ([]model
 func getLikeCountForPost(dbConnection *sql.DB, postID string) (int, error) {
 	// Query the group_post_likes table to get the count of likes for the post
 	query := "SELECT COUNT(*) FROM group_post_likes WHERE post_id = ?"
-	var likeCount int
-	err := dbConnection.QueryRow(query, postID).Scan(&likeCount)
+	var likesCount int
+	err := dbConnection.QueryRow(query, postID).Scan(&likesCount)
 	if err != nil {
 		log.Printf("Error fetching like count for post %s: %v", postID, err)
 		return 0, err
 	}
 
-	return likeCount, nil
+	return likesCount, nil
 }

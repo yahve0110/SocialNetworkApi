@@ -133,7 +133,6 @@ func GetImageURLFromDatabase(db *sql.DB, postID string) (string, error) {
 }
 
 // DeleteCommentsByPostID deletes all comments related to a post from the database
-// DeleteCommentsByPostID deletes all comments related to a post from the database
 func DeleteCommentsByPostID(db *sql.DB, postID string) error {
     // Prepare SQL statement to select image URLs of comments related to the specified post
     stmt, err := db.Prepare("SELECT image FROM comments WHERE post_id = ?")

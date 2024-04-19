@@ -3,7 +3,6 @@ package groupInviteHandlers
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	database "social/internal/db"
@@ -36,9 +35,6 @@ func AcceptGroupRequestHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User not authenticated", http.StatusUnauthorized)
 		return
 	}
-fmt.Println("GroupId: ", requestData.GroupID)
-fmt.Println("Request UserID: ", requestData.UserID)
-
 
 	// Check if the user is the group creator
 	isGroupCreator, err := helpers.IsUserGroupCreator(dbConnection, creatorID, requestData.GroupID)
@@ -54,7 +50,7 @@ fmt.Println("Request UserID: ", requestData.UserID)
 	}
 
 	// Check if the request exists
-	exists, err := helpers.GroupRequestExists(dbConnection, requestData.GroupID,requestData.UserID)
+	exists, err := helpers.GroupRequestExists(dbConnection, requestData.GroupID, requestData.UserID)
 	if err != nil {
 		log.Printf("Error checking if group request exists: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -66,8 +62,6 @@ fmt.Println("Request UserID: ", requestData.UserID)
 		return
 	}
 
-
-
 	// Add the user to the group members
 	err = AddUserToGroup(dbConnection, requestData.UserID, requestData.GroupID)
 	if err != nil {
@@ -76,7 +70,7 @@ fmt.Println("Request UserID: ", requestData.UserID)
 		return
 	}
 
-// Delete the group request
+	// Delete the group request
 	err = DeleteGroupRequest(dbConnection, requestData.GroupID, requestData.UserID)
 	if err != nil {
 		log.Printf("Error deleting group request: %v", err)
@@ -84,30 +78,28 @@ fmt.Println("Request UserID: ", requestData.UserID)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	// Set response headers and status code
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(requestData)
 }
 
-
-
-
 // DeleteGroupRequest deletes a group request from the database
 func DeleteGroupRequest(db *sql.DB, GroupID, UserID string) error {
-    // Prepare the SQL statement
-    stmt, err := db.Prepare("DELETE FROM group_requests WHERE group_id = ? AND user_id = ?")
-    if err != nil {
-        log.Printf("Error preparing SQL statement: %v", err)
-        return err
-    }
-    defer stmt.Close()
+	// Prepare the SQL statement
+	stmt, err := db.Prepare("DELETE FROM group_requests WHERE group_id = ? AND user_id = ?")
+	if err != nil {
+		log.Printf("Error preparing SQL statement: %v", err)
+		return err
+	}
+	defer stmt.Close()
 
-    // Execute the SQL statement
-    _, err = stmt.Exec(GroupID,UserID)
-    if err != nil {
-        log.Printf("Error executing SQL statement: %v", err)
-        return err
-    }
+	// Execute the SQL statement
+	_, err = stmt.Exec(GroupID, UserID)
+	if err != nil {
+		log.Printf("Error executing SQL statement: %v", err)
+		return err
+	}
 
-    return nil
+	return nil
 }

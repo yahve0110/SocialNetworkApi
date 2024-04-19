@@ -11,7 +11,6 @@ import (
 )
 
 // LikeGroupPostHandler handles the liking of a group post
-// LikeGroupPostHandler handles the liking or unliking of a group post
 func LikeGroupPostHandler(w http.ResponseWriter, r *http.Request) {
 	var requestData models.GroupPostLike
 
@@ -63,9 +62,21 @@ func LikeGroupPostHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Get the count of likes for the post
+	likesCount, err := GetLikesCountForPost(dbConnection, requestData.PostID)
+	if err != nil {
+		log.Printf("Error fetching like count for post: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the count of likes in the response
+	responseData := map[string]interface{}{
+		"likesCount": likesCount,
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(requestData)
+	json.NewEncoder(w).Encode(responseData)
 }
 
 // HasUserLikedPost checks if a user has already liked a group post
@@ -120,4 +131,19 @@ func RemoveLikeFromGroupPost(db *sql.DB, userID, postID string) error {
 	}
 
 	return nil
+}
+
+
+// GetLikesCountForPost fetches the count of likes for a group post
+func GetLikesCountForPost(db *sql.DB, postID string) (int, error) {
+	// Query the group_post_likes table to get the count of likes for the post
+	query := "SELECT COUNT(*) FROM group_post_likes WHERE post_id = ?"
+	var likesCount int
+	err := db.QueryRow(query, postID).Scan(&likesCount)
+	if err != nil {
+		log.Printf("Error fetching like count for post %s: %v", postID, err)
+		return 0, err
+	}
+
+	return likesCount, nil
 }

@@ -3,7 +3,7 @@ package groupPostHandlers
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+
 	"log"
 	"net/http"
 	database "social/internal/db"
@@ -55,7 +55,20 @@ func DeleteGroupPostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unauthorized: Only group creator or post creator can delete the post", http.StatusUnauthorized)
 		return
 	}
-	fmt.Println("postID: ", requestData.PostID)
+
+	imageURL, err := GetGroupPostImageURLFromDatabase(dbConnection, requestData.PostID)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if imageURL != "" {
+		err = helpers.DeleteFromCloudinary(imageURL)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
 
 	// Delete the group post
 	err = DeleteGroupPost(dbConnection, userID, requestData.PostID)
@@ -89,4 +102,17 @@ func DeleteGroupPost(db *sql.DB, userID, postID string) error {
 	}
 
 	return nil
+}
+
+func GetGroupPostImageURLFromDatabase(db *sql.DB, postID string) (string, error) {
+	query := "SELECT group_post_img FROM group_posts WHERE post_id = ?"
+
+	var imageURL string
+	err := db.QueryRow(query, postID).Scan(&imageURL)
+	if err != nil {
+		return "", err
+	}
+
+	return imageURL, nil
+
 }

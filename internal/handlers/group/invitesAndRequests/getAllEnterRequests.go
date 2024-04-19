@@ -64,6 +64,17 @@ func GetAllGroupRequestsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Fetch user details for each group request
+	for i, request := range groupRequests {
+		user, err := getUserDetails(dbConnection, request.UserID)
+		if err != nil {
+			log.Printf("Error fetching user details: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		groupRequests[i].User = user
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(groupRequests)
 }
@@ -96,4 +107,16 @@ func getAllGroupRequestsFromDatabase(dbConnection *sql.DB, groupID string) ([]mo
 	}
 
 	return groupRequests, nil
+}
+
+// getUserDetails fetches user details from the database based on user ID
+func getUserDetails(dbConnection *sql.DB, userID string) (models.User, error) {
+	var user models.User
+	// Query user details from the "users" table
+	row := dbConnection.QueryRow("SELECT first_name, last_name, profile_picture FROM users WHERE user_id = ?", userID)
+	if err := row.Scan(&user.FirstName, &user.LastName, &user.ProfilePicture); err != nil {
+		return user, err
+	}
+	user.UserID = userID
+	return user, nil
 }

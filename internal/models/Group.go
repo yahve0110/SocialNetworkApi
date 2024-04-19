@@ -16,6 +16,7 @@ type GroupInvitation struct {
 	InviterID  string `json:"inviter_id"`
 	ReceiverID string `json:"receiver_id"`
 	Status     string `json:"status"`
+	GroupName  string `json:"group_name"`
 }
 
 type GroupMember struct {
@@ -26,12 +27,14 @@ type GroupMember struct {
 
 // GroupEvent represents an event in a group
 type GroupEvent struct {
-	EventID     string    `json:"event_id"`
-	GroupID     string    `json:"group_id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	DateTime    time.Time `json:"date_time"`
-	Options     struct {
+	EventID        string    `json:"event_id"`
+	GroupID        string    `json:"group_id"`
+	Title          string    `json:"title"`
+	EventCreatedAt time.Time `json:"event_created_at"`
+	Description    string    `json:"description"`
+	DateTime       time.Time `json:"date_time"`
+	EventImg       string    `json:"event_img"`
+	Options        struct {
 		Going    []string `json:"going"`
 		NotGoing []string `json:"not_going"`
 	} `json:"options"`
@@ -43,15 +46,19 @@ type GroupRequest struct {
 	GroupID   string `json:"group_id"`
 	UserID    string `json:"user_id"`
 	Status    string `json:"status"`
+	User      User   `json:"user"` // Add a User field to store user details
 }
 
 type GroupPost struct {
-	PostID    string    `json:"post_id"`
-	GroupID   string    `json:"group_id"`
-	AuthorID  string    `json:"author_id"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
-	LikeCount int       `json:"like_count"`
+	PostID          string    `json:"post_id"`
+	GroupID         string    `json:"group_id"`
+	AuthorID        string    `json:"author_id"`
+	Content         string    `json:"content"`
+	CreatedAt       time.Time `json:"created_at"`
+	LikesCount      int       `json:"likes_count"`
+	AuthorFirstName string    `json:"author_first_name"`
+	AuthorLastName  string    `json:"author_last_name"`
+	Image           string    `json:"group_post_img"`
 }
 
 type GroupPostComment struct {

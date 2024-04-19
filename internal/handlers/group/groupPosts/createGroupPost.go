@@ -15,6 +15,7 @@ import (
 )
 
 // CreateGroupPostHandler handles the creation of posts in a group
+// CreateGroupPostHandler handles the creation of posts in a group
 func CreateGroupPostHandler(w http.ResponseWriter, r *http.Request) {
 	var postData models.GroupPost
 
@@ -67,6 +68,19 @@ func CreateGroupPostHandler(w http.ResponseWriter, r *http.Request) {
 	//create postId
 	postData.PostID = uuid.New().String()
 
+
+
+	//upload group image to cloud storage
+	postImageBase64 := postData.Image
+	if postImageBase64 != "" {
+		cloudinaryURL, err := helpers.ImageToCloud(postImageBase64, w)
+		if err != nil {
+			// Handle error
+			return
+		}
+		postData.Image = cloudinaryURL
+	}
+
 	// Insert the post into the database
 	err = InsertGroupPost(dbConnection, postData)
 	if err != nil {
@@ -74,6 +88,18 @@ func CreateGroupPostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+
+	// Fetch the author's first name and last name from the database
+	authorFirstName, authorLastName, err := GetUserFirstNameAndLastName(dbConnection, userID)
+	if err != nil {
+		log.Printf("Error fetching author's first name and last name: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Include the author's first name and last name in the response
+	postData.AuthorFirstName = authorFirstName
+	postData.AuthorLastName = authorLastName
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
@@ -83,7 +109,7 @@ func CreateGroupPostHandler(w http.ResponseWriter, r *http.Request) {
 // InsertGroupPost inserts a new post into the database
 func InsertGroupPost(db *sql.DB, post models.GroupPost) error {
 	// Prepare the SQL statement
-	stmt, err := db.Prepare("INSERT INTO group_posts (post_id, group_id, author_id, content, post_date) VALUES (?, ?, ?, ?, ?)")
+	stmt, err := db.Prepare("INSERT INTO group_posts (post_id, group_id, author_id, content, post_date, group_post_img) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Printf("Error preparing SQL statement: %v", err)
 		return err
@@ -91,11 +117,28 @@ func InsertGroupPost(db *sql.DB, post models.GroupPost) error {
 	defer stmt.Close()
 
 	// Execute the SQL statement
-	_, err = stmt.Exec(post.PostID, post.GroupID, post.AuthorID, post.Content, post.CreatedAt)
+	_, err = stmt.Exec(post.PostID, post.GroupID, post.AuthorID, post.Content, post.CreatedAt,post.Image)
 	if err != nil {
 		log.Printf("Error executing SQL statement: %v", err)
 		return err
 	}
 
 	return nil
+}
+
+func GetUserFirstNameAndLastName(db *sql.DB, userID string) (string, string, error) {
+    // Prepare the SQL statement to fetch the user's first name and last name
+    query := "SELECT first_name, last_name FROM users WHERE user_id = ?"
+
+    // Execute the SQL query to fetch the user's first name and last name
+    row := db.QueryRow(query, userID)
+
+    var firstName, lastName string
+    // Scan the query result into variables
+    err := row.Scan(&firstName, &lastName)
+    if err != nil {
+        return "", "", err
+    }
+
+    return firstName, lastName, nil
 }

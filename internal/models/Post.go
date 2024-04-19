@@ -11,6 +11,7 @@ type Post struct{
 	Image string `json:"image"`
 	Private string `json:"privacy"`
 	AuthorNickname string `json:"author_nickname"`
+	PrivateUsersArr []string `json:"private_users"`
 }
 
 

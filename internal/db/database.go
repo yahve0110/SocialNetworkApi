@@ -202,6 +202,7 @@ func CreateAllTables(db *sql.DB) error {
 		group_id TEXT NOT NULL,
 		author_id TEXT NOT NULL,
 		content TEXT NOT NULL,
+		group_post_img TEXT NOT NULL,
 		post_date TIMESTAMP NOT NULL,
 		FOREIGN KEY (group_id) REFERENCES groups(group_id),
 		FOREIGN KEY (author_id) REFERENCES users(user_id)
@@ -237,7 +238,9 @@ func CreateAllTables(db *sql.DB) error {
 		group_id TEXT NOT NULL,
 		title TEXT NOT NULL,
 		description TEXT,
+		event_created_at TIMESTAMP,
 		date_time TIMESTAMP,
+		event_img TEXT,
 		FOREIGN KEY (group_id) REFERENCES groups(group_id)
 	);
 

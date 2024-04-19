@@ -13,5 +13,6 @@ type User struct {
 	Role string `json:"role"`
 	About string `json:"about"`
 	Privacy string `json:"privacy"`
+	IsMember bool `json:"is_member"`
 
 }

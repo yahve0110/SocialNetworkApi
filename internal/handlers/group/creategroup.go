@@ -52,6 +52,21 @@ func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 	groupData.GroupID = uuid.New().String()
 	groupData.CreationDate = time.Now()
 
+	//upload group image to cloud storage
+	groupImageBase64 := groupData.GroupImage
+	if groupImageBase64 != "" {
+		cloudinaryURL, err := helpers.ImageToCloud(groupImageBase64, w)
+		if err != nil {
+			// Handle error
+			return
+		}
+		groupData.GroupImage = cloudinaryURL
+	}else if groupImageBase64 == "" {
+		//set standard group image
+		groupData.GroupImage = "https://res.cloudinary.com/djkotlye3/image/upload/v1713162945/g0n2phibtawxxgwmxnig.jpg"
+
+	}
+
 	// Attempt to save the group to the database
 	err = saveGroupToDatabase(groupData, dbConnection)
 	if err != nil {
