@@ -10,6 +10,7 @@ import (
 	groupInviteHandlers "social/internal/handlers/group/invitesAndRequests"
 	postHandler "social/internal/handlers/post"
 	userHandlers "social/internal/handlers/user"
+	userFeedHandler "social/internal/handlers/userFeed"
 	"social/internal/middleware"
 
 	groupEventHandlers "social/internal/handlers/group/groupEvents"
@@ -77,6 +78,11 @@ func DefineRoutes() *Router {
 	router.Handle("POST", "/joinEvent", middleware.LogMiddleware(groupEventHandlers.JoinGroupEventHandler), middleware.AuthMiddleware)
 	router.Handle("POST", "/declineEvent", middleware.LogMiddleware(groupEventHandlers.DeclineEventHandler), middleware.AuthMiddleware)
 	router.Handle("GET", "/getGroupEvents", middleware.LogMiddleware(groupEventHandlers.GetGroupEvents), middleware.AuthMiddleware)
+
+	router.Handle("GET", "/getUserFeed", middleware.LogMiddleware(userFeedHandler.GetUserFeedHandler), middleware.AuthMiddleware)
+
+
+
 
 	return router
 }

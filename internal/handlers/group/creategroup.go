@@ -61,7 +61,7 @@ func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		groupData.GroupImage = cloudinaryURL
-	}else if groupImageBase64 == "" {
+	} else if groupImageBase64 == "" {
 		//set standard group image
 		groupData.GroupImage = "https://res.cloudinary.com/djkotlye3/image/upload/v1713162945/g0n2phibtawxxgwmxnig.jpg"
 
@@ -77,6 +77,13 @@ func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("Error saving group to database: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Add the creator to the members of the group
+	if err := addMemberToGroup(userID, groupData.GroupID, dbConnection); err != nil {
+		log.Printf("Error adding creator to group members: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -119,5 +126,14 @@ func saveGroupToDatabase(groupData models.Group, db *sql.DB) error {
 		return err
 	}
 
+	return nil
+}
+
+func addMemberToGroup(userID, groupID string, db *sql.DB) error {
+	_, err := db.Exec("INSERT INTO group_members (group_id, user_id) VALUES (?, ?)", groupID, userID)
+	if err != nil {
+		log.Printf("Error adding member to group: %v", err)
+		return err
+	}
 	return nil
 }

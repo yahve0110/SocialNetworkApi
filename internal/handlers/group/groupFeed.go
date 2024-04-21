@@ -9,6 +9,7 @@ import (
 	"time"
 
 	database "social/internal/db"
+	"social/internal/helpers"
 	"social/internal/models"
 )
 
@@ -132,14 +133,14 @@ func RetrieveGroupEvents(db *sql.DB, groupID string) ([]models.GroupEvent, error
 		}
 
 		// Query database to get users going to the event
-		usersGoing, err := RetrieveUsersGoingToEvent(db, event.EventID)
+		usersGoing, err := helpers.RetrieveUsersGoingToEvent(db, event.EventID)
 		if err != nil {
 			return nil, err
 		}
 		event.Options.Going = usersGoing
 
 		// Query database to get users not going to the event
-		usersNotGoing, err := RetrieveUsersNotGoingToEvent(db, event.EventID)
+		usersNotGoing, err := helpers.RetrieveUsersNotGoingToEvent(db, event.EventID)
 		if err != nil {
 			return nil, err
 		}
@@ -218,65 +219,4 @@ func getLikeCountForPost(dbConnection *sql.DB, postID string) (int, error) {
 	}
 
 	return likesCount, nil
-}
-
-// RetrieveUsersGoingToEvent retrieves user IDs of users who are going to the specified event
-func RetrieveUsersGoingToEvent(db *sql.DB, eventID string) ([]string, error) {
-    query := `
-    SELECT
-        member_id
-    FROM
-        event_going_members
-    WHERE
-        event_id = ?
-    `
-
-    rows, err := db.Query(query, eventID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var usersGoing []string
-
-    for rows.Next() {
-        var userID string
-        if err := rows.Scan(&userID); err != nil {
-            return nil, err
-        }
-        usersGoing = append(usersGoing, userID)
-    }
-
-    return usersGoing, nil
-}
-
-
-// RetrieveUsersNotGoingToEvent retrieves user IDs of users who are not going to the specified event
-func RetrieveUsersNotGoingToEvent(db *sql.DB, eventID string) ([]string, error) {
-    query := `
-    SELECT
-        member_id
-    FROM
-        event_not_going_members
-    WHERE
-        event_id = ?
-    `
-
-    rows, err := db.Query(query, eventID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var usersNotGoing []string
-
-    for rows.Next() {
-        var userID string
-        if err := rows.Scan(&userID); err != nil {
-            return nil, err
-        }
-        usersNotGoing = append(usersNotGoing, userID)
-    }
-
-    return usersNotGoing, nil
 }

@@ -64,21 +64,15 @@ func GetAllGroupMembers(w http.ResponseWriter, r *http.Request) {
 func getAllGroupMembersFromDatabase(dbConnection *sql.DB, groupID, userID string) (GroupMembersResponse, error) {
 	var response GroupMembersResponse
 
-	// Query the database to get all members of the group, including the creator
+	// Query the database to get all members of the group
 	query := `
-        SELECT u.user_id, u.username, u.profile_picture,
-            CASE
-                WHEN gm.user_id IS NOT NULL THEN true
-                WHEN u.user_id = g.creator_id THEN true
-                ELSE false
-            END AS is_member
+        SELECT u.user_id, u.username, u.profile_picture, u.first_name, u.last_name
         FROM users u
-        LEFT JOIN group_members gm ON u.user_id = gm.user_id AND gm.group_id = $1
-        JOIN groups g ON g.group_id = $1
-        WHERE u.user_id = $2 OR u.user_id = g.creator_id`
-	log.Printf("SQL Query: %s, Group ID: %s, User ID: %s", query, groupID, userID) // Log SQL query, group ID, and user ID for debugging
+        JOIN group_members gm ON u.user_id = gm.user_id
+        WHERE gm.group_id = $1`
+	log.Printf("SQL Query: %s, Group ID: %s", query, groupID) // Log SQL query and group ID for debugging
 
-	rows, err := dbConnection.Query(query, groupID, userID)
+	rows, err := dbConnection.Query(query, groupID)
 	if err != nil {
 		log.Printf("Error querying group members from database: %v", err)
 		return response, err
@@ -88,16 +82,18 @@ func getAllGroupMembersFromDatabase(dbConnection *sql.DB, groupID, userID string
 	// Iterate through the result set and create user objects
 	for rows.Next() {
 		var user models.User
-		var isMember bool
-		if err := rows.Scan(&user.UserID, &user.Username, &user.ProfilePicture, &isMember); err != nil {
+		if err := rows.Scan(&user.UserID, &user.Username, &user.ProfilePicture, &user.FirstName, &user.LastName); err != nil {
 			log.Printf("Error scanning user rows: %v", err)
 			return response, err
 		}
-		if isMember {
-			response.Members = append(response.Members, user)
-		}
-		if user.UserID == userID && isMember {
+		response.Members = append(response.Members, user)
+	}
+
+	// Check if the current user is a member of the group
+	for _, member := range response.Members {
+		if member.UserID == userID {
 			response.IsMember = true
+			break
 		}
 	}
 

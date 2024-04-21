@@ -152,7 +152,6 @@ func GroupRequestExists(db *sql.DB, groupID, userID string) (bool, error) {
 	return count > 0, nil
 }
 
-
 // IsUserPostCreator checks if a user is the creator of the specified post
 func IsUserPostCreator(db *sql.DB, userID, postID string) (bool, error) {
 	// Query the posts table to check if the user is the creator
@@ -165,4 +164,64 @@ func IsUserPostCreator(db *sql.DB, userID, postID string) (bool, error) {
 	}
 
 	return exists, nil
+}
+
+// RetrieveUsersGoingToEvent retrieves user IDs of users who are going to the specified event
+func RetrieveUsersGoingToEvent(db *sql.DB, eventID string) ([]string, error) {
+	query := `
+    SELECT
+        member_id
+    FROM
+        event_going_members
+    WHERE
+        event_id = ?
+    `
+
+	rows, err := db.Query(query, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var usersGoing []string
+
+	for rows.Next() {
+		var userID string
+		if err := rows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		usersGoing = append(usersGoing, userID)
+	}
+
+	return usersGoing, nil
+}
+
+// RetrieveUsersNotGoingToEvent retrieves user IDs of users who are not going to the specified event
+func RetrieveUsersNotGoingToEvent(db *sql.DB, eventID string) ([]string, error) {
+	query := `
+    SELECT
+        member_id
+    FROM
+        event_not_going_members
+    WHERE
+        event_id = ?
+    `
+
+	rows, err := db.Query(query, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var usersNotGoing []string
+
+	for rows.Next() {
+		var userID string
+		if err := rows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		usersNotGoing = append(usersNotGoing, userID)
+	}
+
+	return usersNotGoing, nil
 }

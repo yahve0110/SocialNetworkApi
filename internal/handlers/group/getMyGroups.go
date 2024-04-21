@@ -43,32 +43,32 @@ func GetMyGroups(w http.ResponseWriter, r *http.Request) {
 // getAllGroupsFromDatabase fetches all groups from the database
 func getMyGroupsFromDatabase(dbConnection *sql.DB, userID string) ([]models.Group, error) {
 	// Query groups where the user is the creator
-	rows, err := dbConnection.Query("SELECT g.group_id, g.group_name, g.group_description, g.group_image, g.creation_date FROM groups g WHERE g.creator_id = $1", userID)
-	if err != nil {
-		log.Printf("Error querying groups created by the user: %v", err)
-		return nil, err
-	}
-	defer rows.Close()
+	// rows, err := dbConnection.Query("SELECT g.group_id, g.group_name, g.group_description, g.group_image, g.creation_date FROM groups g WHERE g.creator_id = $1", userID)
+	// if err != nil {
+	// 	log.Printf("Error querying groups created by the user: %v", err)
+	// 	return nil, err
+	// }
+	// defer rows.Close()
 
 	// Iterate through the result set and create group objects
 	var groups []models.Group
-	for rows.Next() {
-		var group models.Group
-		if err := rows.Scan(&group.GroupID, &group.GroupName, &group.GroupDescription, &group.GroupImage, &group.CreationDate); err != nil {
-			log.Printf("Error scanning group rows: %v", err)
-			return nil, err
-		}
-		groups = append(groups, group)
-	}
+	// for rows.Next() {
+	// 	var group models.Group
+	// 	if err := rows.Scan(&group.GroupID, &group.GroupName, &group.GroupDescription, &group.GroupImage, &group.CreationDate); err != nil {
+	// 		log.Printf("Error scanning group rows: %v", err)
+	// 		return nil, err
+	// 	}
+	// 	groups = append(groups, group)
+	// }
 
-	// Check for errors from iterating over rows
-	if err := rows.Err(); err != nil {
-		log.Printf("Error iterating over group rows: %v", err)
-		return nil, err
-	}
+	// // Check for errors from iterating over rows
+	// if err := rows.Err(); err != nil {
+	// 	log.Printf("Error iterating over group rows: %v", err)
+	// 	return nil, err
+	// }
 
 	// Query groups where the user is a member
-	rows, err = dbConnection.Query("SELECT g.group_id, g.group_name, g.group_description, g.group_image, g.creation_date FROM groups g JOIN group_members gm ON g.group_id = gm.group_id WHERE gm.user_id = $1", userID)
+	rows, err := dbConnection.Query("SELECT g.group_id, g.group_name, g.group_description, g.group_image, g.creation_date FROM groups g JOIN group_members gm ON g.group_id = gm.group_id WHERE gm.user_id = $1", userID)
 	if err != nil {
 		log.Printf("Error querying groups where the user is a member: %v", err)
 		return nil, err
