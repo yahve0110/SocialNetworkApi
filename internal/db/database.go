@@ -260,14 +260,24 @@ func CreateAllTables(db *sql.DB) error {
 		FOREIGN KEY (member_id) REFERENCES users(user_id)
 	);
 
-	CREATE TABLE IF NOT EXISTS chat (
-		message_id INTEGER NOT NULL PRIMARY KEY,
-		user1_id INTEGER NOT NULL,
-		user2_id INTEGER NOT NULL,
-		content TEXT NOT NULL,
-		chat_created_at TEXT NOT NULL,
-		FOREIGN KEY (message_id) REFERENCES users(user_id)
+	CREATE TABLE IF NOT EXISTS privatechat (
+		chat_id STRING NOT NULL,
+		user1_id STRING NOT NULL,
+		user2_id STRING NOT NULL,
+		FOREIGN KEY (user1_id) REFERENCES users(user_id),
+		FOREIGN KEY (user2_id) REFERENCES users(user_id)
 	);
+
+	CREATE TABLE IF NOT EXISTS privatechat_messages (
+		chat_id STRING NOT NULL,
+		message_author_id STRING NOT NULL,
+		content TEXT NOT NULL,
+		timestamp TIMESTAMP NOT NULL,
+		FOREIGN KEY (chat_id) REFERENCES privatechat(chat_id),
+		FOREIGN KEY (message_author_id) REFERENCES users(user_id)
+	);
+
+
 
 	CREATE TABLE IF NOT EXISTS group_chat (
 		chat_id INTEGER NOT NULL PRIMARY KEY,
@@ -303,6 +313,8 @@ func CreateAllTables(db *sql.DB) error {
 		FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
 		UNIQUE(session_id)
 	);
+
+
 
 
     `

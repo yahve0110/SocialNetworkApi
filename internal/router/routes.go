@@ -8,6 +8,7 @@ import (
 	groupPostCommentHandlers "social/internal/handlers/group/groupComments"
 	groupPostHandlers "social/internal/handlers/group/groupPosts"
 	groupInviteHandlers "social/internal/handlers/group/invitesAndRequests"
+	messageHandlers "social/internal/handlers/messages"
 	postHandler "social/internal/handlers/post"
 	userHandlers "social/internal/handlers/user"
 	userFeedHandler "social/internal/handlers/userFeed"
@@ -81,8 +82,10 @@ func DefineRoutes() *Router {
 
 	router.Handle("GET", "/getUserFeed", middleware.LogMiddleware(userFeedHandler.GetUserFeedHandler), middleware.AuthMiddleware)
 
-
-
+	router.Handle("POST", "/openChat", middleware.LogMiddleware(messageHandlers.OpenChat), middleware.AuthMiddleware)
+	router.Handle("GET", "/getChats", middleware.LogMiddleware(messageHandlers.GetUserChats), middleware.AuthMiddleware)
+	router.Handle("POST", "/sendPrivateMessage", middleware.LogMiddleware(messageHandlers.SendPrivateMessage), middleware.AuthMiddleware)
+	router.Handle("GET", "/getChatHistory", middleware.LogMiddleware(messageHandlers.GetChatHistory), middleware.AuthMiddleware)
 
 	return router
 }
