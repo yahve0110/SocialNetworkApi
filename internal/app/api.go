@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	database "social/internal/db"
+	messageHandlers "social/internal/handlers/messages"
 	"social/internal/middleware"
 	myrouter "social/internal/router"
 )
@@ -25,49 +26,56 @@ func New(config *Config) *API {
 	}
 }
 
+
+
+
+
+
 // Start initializes server loggers, router, database, etc.
 func (api *API) Start() error {
-    fmt.Printf("Server is starting on port %s with logger level %s\n", api.config.Port, api.config.LoggerLevel)
-    log.Println("Log message from Start function")
-    // Add your server initialization logic here
+	fmt.Printf("Server is starting on port %s with logger level %s\n", api.config.Port, api.config.LoggerLevel)
+	log.Println("Log message from Start function")
+	// Add your server initialization logic here
 
-    // Create a new router and define routes
-    router := myrouter.DefineRoutes()
+	// Create a new router and define routes
+	router := myrouter.DefineRoutes()
 
-    // Create a middleware that will be applied to all routes
-    allRoutesMiddleware := func(next http.Handler) http.Handler {
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            // Perform pre-processing or checks here
-            fmt.Println("Middleware applied to all routes")
+	// Create a middleware that will be applied to all routes
+	allRoutesMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Perform pre-processing or checks here
+			fmt.Println("Middleware applied to all routes")
 
-            // Call the next handler in the chain
-            next.ServeHTTP(w, r)
-        })
-    }
+			// Call the next handler in the chain
+			next.ServeHTTP(w, r)
+		})
+	}
 
-    // Wrap the entire router with the middleware
-    routerWithMiddleware := allRoutesMiddleware(router)
+	// Wrap the entire router with the middleware
+	routerWithMiddleware := allRoutesMiddleware(router)
 
-    // Apply CORS middleware and pass the router with middleware
-    http.Handle("/", middleware.CORSMiddleware(routerWithMiddleware))
+	// Apply CORS middleware and pass the router with middleware
+	http.Handle("/", middleware.CORSMiddleware(routerWithMiddleware))
+	http.HandleFunc("/ws", messageHandlers.HandleConnections)
+	go messageHandlers.HandleMessages()
+	// Initialize database
+	db, err := database.InitDB("./internal/db/database.db")
+	if err != nil {
+		log.Fatal("Error initializing database:", err)
+		return err
+	}
+	defer db.Close()
 
-    // Initialize database
-    db, err := database.InitDB("./internal/db/database.db")
-    if err != nil {
-        log.Fatal("Error initializing database:", err)
-        return err
-    }
-    defer db.Close()
+	// Start the HTTP server with the correct router
+	err = http.ListenAndServe(api.config.Port, nil) // Pass nil here to use DefaultServeMux
+	if err != nil {
+		log.Fatal("Error starting server:", err)
+		return err
+	}
 
-    // Start the HTTP server with the correct router
-    err = http.ListenAndServe(api.config.Port, nil) // Pass nil here to use DefaultServeMux
-    if err != nil {
-        log.Fatal("Error starting server:", err)
-        return err
-    }
-
-    return nil
+	return nil
 }
+
 // ReadConfigFromFile reads the configuration from a JSON file
 func ReadConfigFromFile(filename string) (*Config, error) {
 	data, err := ioutil.ReadFile(filename)

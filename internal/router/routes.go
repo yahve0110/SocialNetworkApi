@@ -84,7 +84,8 @@ func DefineRoutes() *Router {
 
 	router.Handle("POST", "/openChat", middleware.LogMiddleware(messageHandlers.OpenChat), middleware.AuthMiddleware)
 	router.Handle("GET", "/getChats", middleware.LogMiddleware(messageHandlers.GetUserChats), middleware.AuthMiddleware)
-	router.Handle("POST", "/sendPrivateMessage", middleware.LogMiddleware(messageHandlers.SendPrivateMessage), middleware.AuthMiddleware)
+	// router.Handle("POST", "/sendPrivateMessage", middleware.LogMiddleware(messageHandlers.SendPrivateMessage), middleware.AuthMiddleware)
+	router.Handle("GET", "/getChatHistory", middleware.LogMiddleware(messageHandlers.GetChatHistory), middleware.AuthMiddleware)
 	router.Handle("GET", "/getChatHistory", middleware.LogMiddleware(messageHandlers.GetChatHistory), middleware.AuthMiddleware)
 
 	return router
