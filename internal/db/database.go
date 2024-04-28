@@ -280,27 +280,26 @@ func CreateAllTables(db *sql.DB) error {
 
 
 	CREATE TABLE IF NOT EXISTS group_chat (
-		chat_id INTEGER NOT NULL PRIMARY KEY,
+		chat_id TEXT NOT NULL ,
 		chat_name TEXT NOT NULL,
-		creator_id INTEGER NOT NULL,
-		creation_date TEXT NOT NULL,
-		FOREIGN KEY (creator_id) REFERENCES users(user_id)
+		creator_id TEXT NOT NULL,
+		FOREIGN KEY (creator_id) REFERENCES groups(creator_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS group_chat_members (
-		member_id INTEGER NOT NULL PRIMARY KEY,
-		chat_id INTEGER NOT NULL,
+		member_id TEXT NOT NULL ,
+		chat_id TEXT NOT NULL,
 		FOREIGN KEY (member_id) REFERENCES users(user_id),
 		FOREIGN KEY (chat_id) REFERENCES group_chat(chat_id)
 	);
 
 	CREATE TABLE IF NOT EXISTS group_chat_messages (
-		message_id INTEGER NOT NULL PRIMARY KEY,
+		message_id TEXT NOT NULL ,
 		content TEXT NOT NULL,
-		sender_id INTEGER NOT NULL,
-		chat_id INTEGER NOT NULL,
-		group_chat_message_created_at TIMESTAMP NOT NULL,
-		FOREIGN KEY (sender_id) REFERENCES users(user_id),
+		author_id TEXT NOT NULL,
+		chat_id TEXT NOT NULL,
+		created_at TIMESTAMP NOT NULL,
+		FOREIGN KEY (author_id) REFERENCES users(user_id),
 		FOREIGN KEY (chat_id) REFERENCES group_chat(chat_id)
 
 	);

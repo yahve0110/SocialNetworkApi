@@ -1,13 +1,15 @@
 package messageHandlers
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
-	database "social/internal/db"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	database "social/internal/db"
 )
 
 type SendMessageRequest struct {
@@ -32,58 +34,22 @@ type MessageData struct {
 	Message string `json:"message"`
 }
 
-// SendPrivateMessage обрабатывает запрос на отправку сообщения в чат
-// func SendPrivateMessage(w http.ResponseWriter, r *http.Request) {
-// 	dbConnection := database.DB
+type clientInfo struct {
+	conn   *websocket.Conn
+	userID string
+	chatID string // Добавляем поле chatID
+}
 
-// 	// Проверка аутентификации пользователя
-// 	cookie, err := r.Cookie("sessionID")
-// 	if err != nil {
-// 		http.Error(w, "User not authenticated", http.StatusUnauthorized)
-// 		return
-// 	}
-// 	userID, err := helpers.GetUserIDFromSession(dbConnection, cookie.Value)
-// 	if err != nil {
-// 		http.Error(w, "User not authenticated", http.StatusUnauthorized)
-// 		return
-// 	}
-
-// 	// Получение данных о сообщении из тела запроса
-// 	var requestData SendMessageRequest
-// 	err = json.NewDecoder(r.Body).Decode(&requestData)
-// 	if err != nil {
-// 		http.Error(w, "Failed to decode request body", http.StatusBadRequest)
-// 		return
-// 	}
-
-// 	// Вставка сообщения в базу данных
-// 	result, err := dbConnection.Exec("INSERT INTO privatechat_messages (chat_id, message_author_id, content, timestamp) VALUES (?, ?, ?, ?)",
-// 		requestData.ChatID, userID, requestData.Content, time.Now())
-// 	if err != nil {
-// 		http.Error(w, fmt.Sprintf("Error inserting message into database: %v", err), http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	// Получение идентификатора нового сообщения
-// 	messageID, err := result.LastInsertId()
-// 	if err != nil {
-// 		http.Error(w, fmt.Sprintf("Error getting message ID: %v", err), http.StatusInternalServerError)
-// 		return
-// 	}
-
-// 	// Формирование ответа
-// 	response := SendMessageResponse{
-// 		MessageID: fmt.Sprintf("%d", messageID),
-// 	}
-
-// 	// Отправка ответа клиенту
-// 	json.NewEncoder(w).Encode(response)
-// }
-
-var clients = make(map[*websocket.Conn]bool)
-var broadcast = make(chan SendMessageResponse)
+var (
+	clients   = make(map[*clientInfo]bool)
+	broadcast = make(chan SendMessageResponse)
+	clientsMu sync.Mutex // мьютекс для синхронизации доступа к clients
+)
 
 func HandleConnections(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("userID")
+	chatID := r.URL.Query().Get("chatID") // Получаем chatID из запроса
+
 	// Upgrade the HTTP connection to WebSocket
 	ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 	if err != nil {
@@ -93,9 +59,12 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 	defer ws.Close()
 
 	dbConnection := database.DB
+	fmt.Println("USER ID:", userID)
 
-	// Register the new client
-	clients[ws] = true
+	// Register the new client with chatID
+	clientsMu.Lock()
+	clients[&clientInfo{conn: ws, userID: userID, chatID: chatID}] = true
+	clientsMu.Unlock()
 
 	for {
 		var data MessageData
@@ -103,26 +72,41 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 		err := ws.ReadJSON(&data)
 		if err != nil {
 			log.Printf("Error reading message: %v", err)
-			delete(clients, ws)
+			clientsMu.Lock()
+			for client := range clients {
+				if client.conn == ws {
+					delete(clients, client)
+					break
+				}
+			}
+			clientsMu.Unlock()
 			break
 		}
 
 		msgTime := time.Now()
 		// Вставка сообщения в базу данных
 		// Insert the message into the database
-		// Insert the message into the database
 		_, err = dbConnection.Exec("INSERT INTO privatechat_messages (chat_id, message_author_id, content, timestamp) VALUES (?, ?, ?, ?)",
 			data.ChatID, data.UserID, data.Message, msgTime)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error inserting message into database: %v", err), http.StatusInternalServerError)
-			return
+			log.Printf("Error inserting message into database: %v", err)
+			break
 		}
+
+		// Получение списка участников чата
+		participants, err := GetChatParticipants(data.ChatID, dbConnection)
+		if err != nil {
+			log.Printf("Error getting chat participants: %v", err)
+			break
+		}
+
+		fmt.Println("PARTICIPANTS:", participants)
 
 		var firstName, lastName, profilePicture string
 		err = dbConnection.QueryRow("SELECT first_name, last_name, profile_picture FROM users WHERE user_id = ?", data.UserID).Scan(&firstName, &lastName, &profilePicture)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error fetching user information: %v", err), http.StatusInternalServerError)
-			return
+			log.Printf("Error fetching user information: %v", err)
+			break
 		}
 
 		// Формирование ответа
@@ -136,24 +120,75 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 			ProfilePicture:  profilePicture,
 		}
 
-		// Print the received message to the console
-	
-		broadcast <- response
+		// Отправка сообщения всем участникам чата, включая отправителя
+		clientsMu.Lock()
+		for client := range clients {
+			if client.chatID == data.ChatID {
+				err := client.conn.WriteJSON(response)
+				if err != nil {
+					log.Printf("Ошибка записи: %v", err)
+					client.conn.Close()
+					delete(clients, client)
+				}
+			}
+		}
+		clientsMu.Unlock()
 	}
 }
 
 func HandleMessages() {
+	dbConnection := database.DB
+
 	for {
 		// Получение сообщения из общего канала
 		msg := <-broadcast
-		// Отправка сообщения всем клиентам
+
+		// Получение списка участников чата, которому предназначено сообщение
+		participants, err := GetChatParticipants(msg.ChatID, dbConnection)
+		if err != nil {
+			log.Printf("Error getting chat participants: %v", err)
+			continue
+		}
+
+		// Отправка сообщения всем участникам чата, кроме отправителя
+		clientsMu.Lock()
 		for client := range clients {
-			err := client.WriteJSON(msg)
-			if err != nil {
-				log.Printf("Ошибка записи: %v", err)
-				client.Close()
-				delete(clients, client)
+			for _, participant := range participants {
+				if participant == client.userID && participant != msg.MessageAuthorID {
+					err := client.conn.WriteJSON(msg)
+					if err != nil {
+						log.Printf("Ошибка записи: %v", err)
+						client.conn.Close()
+						delete(clients, client)
+					}
+				}
 			}
 		}
+		clientsMu.Unlock()
 	}
+}
+
+func GetChatParticipants(chatID string, db *sql.DB) ([]string, error) {
+	participants := make([]string, 0)
+
+	// Запрос к базе данных для получения участников чата
+	rows, err := db.Query("SELECT user1_id, user2_id FROM privatechat WHERE chat_id = ?", chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Итерация по результатам запроса и добавление участников в список
+	for rows.Next() {
+		var user1ID, user2ID string
+		if err := rows.Scan(&user1ID, &user2ID); err != nil {
+			return nil, err
+		}
+		participants = append(participants, user1ID, user2ID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return participants, nil
 }

@@ -6,6 +6,7 @@ import (
 	followHandlers "social/internal/handlers/follows"
 	groupHandlers "social/internal/handlers/group"
 	groupPostCommentHandlers "social/internal/handlers/group/groupComments"
+	groupChat "social/internal/handlers/group/groupMessages"
 	groupPostHandlers "social/internal/handlers/group/groupPosts"
 	groupInviteHandlers "social/internal/handlers/group/invitesAndRequests"
 	messageHandlers "social/internal/handlers/messages"
@@ -84,9 +85,16 @@ func DefineRoutes() *Router {
 
 	router.Handle("POST", "/openChat", middleware.LogMiddleware(messageHandlers.OpenChat), middleware.AuthMiddleware)
 	router.Handle("GET", "/getChats", middleware.LogMiddleware(messageHandlers.GetUserChats), middleware.AuthMiddleware)
-	// router.Handle("POST", "/sendPrivateMessage", middleware.LogMiddleware(messageHandlers.SendPrivateMessage), middleware.AuthMiddleware)
 	router.Handle("GET", "/getChatHistory", middleware.LogMiddleware(messageHandlers.GetChatHistory), middleware.AuthMiddleware)
 	router.Handle("GET", "/getChatHistory", middleware.LogMiddleware(messageHandlers.GetChatHistory), middleware.AuthMiddleware)
+
+	router.Handle("POST", "/joinGroupChat", middleware.LogMiddleware(groupChat.JoinGroupChatHandler), middleware.AuthMiddleware)
+	router.Handle("GET", "/getGroupChatHistory", middleware.LogMiddleware(groupChat.GetGroupChatHistory), middleware.AuthMiddleware)
+	router.Handle("POST", "/sendGroupChatMessage", middleware.LogMiddleware(groupChat.SendGroupChatMessage), middleware.AuthMiddleware)
+	router.Handle("GET", "/getGroupChats", middleware.LogMiddleware(groupChat.GetGroupChats), middleware.AuthMiddleware)
+
+
+
 
 	return router
 }

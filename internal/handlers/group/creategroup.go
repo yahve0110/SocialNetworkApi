@@ -88,6 +88,16 @@ func CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//create group chat
+	chatID := groupData.GroupID
+	chatName := groupData.GroupName + "-chat"
+	err = createGroupChat(groupData.GroupID, chatName, userID, chatID, dbConnection)
+	if err != nil {
+		log.Printf("Error creating group chat: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(groupData); err != nil {
@@ -135,5 +145,23 @@ func addMemberToGroup(userID, groupID string, db *sql.DB) error {
 		log.Printf("Error adding member to group: %v", err)
 		return err
 	}
+	return nil
+}
+
+func createGroupChat(groupID, groupName, creatorID, chatID string, db *sql.DB) error {
+	// Prepare the SQL statement
+	stmt, err := db.Prepare("INSERT INTO group_chat (chat_id, chat_name, creator_id) VALUES (?, ?, ?)")
+	if err != nil {
+		log.Printf("Error preparing SQL statement for creating group chat: %v", err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(chatID, groupName, creatorID)
+	if err != nil {
+		log.Printf("Error executing SQL statement for creating group chat: %v", err)
+		return err
+	}
+
 	return nil
 }
