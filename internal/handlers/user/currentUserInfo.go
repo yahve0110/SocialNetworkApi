@@ -50,7 +50,6 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to marshal user data", http.StatusInternalServerError)
 			return
 		}
-		fmt.Println(jsonData)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jsonData)

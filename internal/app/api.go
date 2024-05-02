@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	database "social/internal/db"
+	groupChat "social/internal/handlers/group/groupMessages"
 	messageHandlers "social/internal/handlers/messages"
 	"social/internal/middleware"
 	myrouter "social/internal/router"
@@ -57,7 +58,10 @@ func (api *API) Start() error {
 	// Apply CORS middleware and pass the router with middleware
 	http.Handle("/", middleware.CORSMiddleware(routerWithMiddleware))
 	http.HandleFunc("/ws", messageHandlers.HandleConnections)
+	http.HandleFunc("/wsGroupChat", groupChat.HandleGroupChatConnections)
+
 	go messageHandlers.HandleMessages()
+	go  groupChat.HandleGroupMessages()
 	// Initialize database
 	db, err := database.InitDB("./internal/db/database.db")
 	if err != nil {

@@ -90,7 +90,7 @@ func DefineRoutes() *Router {
 
 	router.Handle("POST", "/joinGroupChat", middleware.LogMiddleware(groupChat.JoinGroupChatHandler), middleware.AuthMiddleware)
 	router.Handle("GET", "/getGroupChatHistory", middleware.LogMiddleware(groupChat.GetGroupChatHistory), middleware.AuthMiddleware)
-	router.Handle("POST", "/sendGroupChatMessage", middleware.LogMiddleware(groupChat.SendGroupChatMessage), middleware.AuthMiddleware)
+	//router.Handle("POST", "/sendGroupChatMessage", middleware.LogMiddleware(groupChat.SendGroupChatMessage), middleware.AuthMiddleware)
 	router.Handle("GET", "/getGroupChats", middleware.LogMiddleware(groupChat.GetGroupChats), middleware.AuthMiddleware)
 
 

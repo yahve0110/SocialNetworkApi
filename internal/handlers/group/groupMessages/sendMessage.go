@@ -2,77 +2,182 @@ package groupChat
 
 import (
 	"database/sql"
-	"encoding/json"
+	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	database "social/internal/db"
-	"social/internal/helpers"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 )
 
+
 type GroupChatMessageToSave struct {
-	Content   string `json:"content"`
-	AuthorID  string `json:"author_id"`
-	ChatID    string `json:"chat_id"`
-	CreatedAt string `json:"created_at"`
+    MessageID  string    `json:"message_id"`
+    Content    string    `json:"content"`
+    AuthorID   string    `json:"author_id"`
+    ChatID     string    `json:"chat_id"`
+    CreatedAt  time.Time `json:"created_at"`
+    AuthorName string    `json:"author_name"`
 }
 
-func SendGroupChatMessage(w http.ResponseWriter, r *http.Request) {
-	// Декодирование данных сообщения из тела запроса
-	var message GroupChatMessageToSave
-	err := json.NewDecoder(r.Body).Decode(&message)
+type SendMessageResponse struct {
+	ChatID          string    `json:"chat_id"`
+	MessageAuthorID string    `json:"author_id"`
+	Content         string    `json:"content"`
+	Timestamp       time.Time `json:"created_at"`
+	FirstName       string    `json:"author_name"`
+	LastName        string    `json:"last_name"`
+	ProfilePicture  string    `json:"profile_picture"`
+}
+
+var (
+	groupClients   = make(map[*clientInfo]bool)
+	groupBroadcast = make(chan SendMessageResponse)
+	groupClientsMu sync.Mutex // мьютекс для синхронизации доступа к groupClients
+)
+
+type MessageData struct {
+	ChatID  string `json:"chat_id"`
+	UserID  string `json:"user_id"`
+	Message string `json:"message"`
+}
+
+type clientInfo struct {
+	conn *websocket.Conn
+
+	chatID string // Добавляем поле chatID
+}
+
+type UserInfo struct {
+	FirstName      string `json:"first_name"`
+	LastName       string `json:"last_name"`
+	ProfilePicture string `json:"profile_picture"`
+}
+
+func HandleGroupChatConnections(w http.ResponseWriter, r *http.Request) {
+	chatID := r.URL.Query().Get("chatID") // Получаем chatID из запроса
+
+	// Upgrade the HTTP connection to WebSocket
+	ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		log.Fatal(err)
 		return
 	}
+	defer ws.Close()
 
 	dbConnection := database.DB
-	// Получение идентификатора текущего пользователя из сессии
-	cookie, err := r.Cookie("sessionID")
-	if err != nil {
-		http.Error(w, "User not authenticated", http.StatusUnauthorized)
-		return
-	}
-	userID, err := helpers.GetUserIDFromSession(dbConnection, cookie.Value)
-	if err != nil {
-		http.Error(w, "User not authenticated", http.StatusUnauthorized)
-		return
-	}
-	// Получение дополнительных данных из запроса, таких как chat_id
-	chatID := message.ChatID // Используем chatID из тела запроса
-	authorID := userID
 
-	// Установка времени создания сообщения
-	createdAt := time.Now().Format(time.RFC3339)
-	messageId := uuid.New().String()
-	// Сохранение сообщения в базе данных
-	err = saveGroupChatMessage(dbConnection, message.Content, chatID, authorID, createdAt, messageId)
-	if err != nil {
-		http.Error(w, "Failed to send group chat message", http.StatusInternalServerError)
-		return
-	}
+	// Register the new client with chatID
+	groupClientsMu.Lock()
+	groupClients[&clientInfo{conn: ws, chatID: chatID}] = true
+	groupClientsMu.Unlock()
 
-	// Отправка ответа клиенту об успешной отправке сообщения
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"message": "Group chat message sent successfully"})
+	for {
+		var data MessageData
+		// Read messages from WebSocket and decode into MessageData
+		err := ws.ReadJSON(&data)
+		if err != nil {
+			log.Printf("Error reading message: %v", err)
+			groupClientsMu.Lock()
+			for client := range groupClients {
+				if client.conn == ws {
+					delete(groupClients, client)
+					break
+				}
+			}
+			groupClientsMu.Unlock()
+			break
+		}
+
+		msgTime := time.Now()
+		// Вставка сообщения в базу данных
+		err = saveGroupChatMessage(data, msgTime)
+		if err != nil {
+			log.Printf("Error saving message: %v", err)
+			break
+		}
+
+		// Получение информации об авторе сообщения
+		authorInfo, err := getUserInfo(data.UserID, dbConnection)
+		if err != nil {
+			log.Printf("Error fetching user information: %v", err)
+			break
+		}
+
+		// Формирование ответа
+		response := SendMessageResponse{
+			ChatID:          data.ChatID,
+			Content:         data.Message,
+			MessageAuthorID: data.UserID,
+			Timestamp:       msgTime,
+			FirstName:       authorInfo.FirstName,
+			LastName:        authorInfo.LastName,
+			ProfilePicture:  authorInfo.ProfilePicture,
+		}
+
+		// Отправка сообщения всем участникам чата
+		groupClientsMu.Lock()
+		for client := range groupClients {
+			if client.chatID == data.ChatID {
+				err := client.conn.WriteJSON(response)
+				if err != nil {
+					log.Printf("Ошибка записи: %v", err)
+					client.conn.Close()
+					delete(groupClients, client)
+				}
+			}
+		}
+		groupClientsMu.Unlock()
+	}
 }
 
-func saveGroupChatMessage(db *sql.DB, message, chatID, authorID, createdAt, message_id string) error {
-	// Подготовка SQL-запроса для вставки сообщения в базу данных
-	stmt, err := db.Prepare("INSERT INTO group_chat_messages (content, author_id, chat_id, created_at,message_id) VALUES (?, ?, ?, ?, ?)")
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
+func saveGroupChatMessage(message MessageData, timestamp time.Time) error {
+	db := database.DB
 
-	// Выполнение SQL-запроса
-	_, err = stmt.Exec(message, authorID, chatID, createdAt,message_id)
+	// Generate unique message ID
+	messageID := uuid.New().String()
+
+	// Insert message into database
+	_, err := db.Exec("INSERT INTO group_chat_messages (chat_id, author_id, content, created_at, message_id) VALUES (?, ?, ?, ?, ?)",
+		message.ChatID, message.UserID, message.Message, timestamp, messageID)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func getUserInfo(userID string, db *sql.DB) (UserInfo, error) {
+	var userInfo UserInfo
+	err := db.QueryRow("SELECT first_name, last_name, profile_picture FROM users WHERE user_id = ?", userID).
+		Scan(&userInfo.FirstName, &userInfo.LastName, &userInfo.ProfilePicture)
+	if err != nil {
+		return UserInfo{}, err
+	}
+	return userInfo, nil
+}
+
+func HandleGroupMessages() {
+
+	for {
+		// Получение сообщения из общего канала
+		msg := <-groupBroadcast
+
+		// Отправка сообщения всем участникам чата
+		groupClientsMu.Lock()
+		for client := range groupClients {
+			if client.chatID == msg.ChatID {
+				err := client.conn.WriteJSON(msg)
+				if err != nil {
+					log.Printf("Error when writing: %v", err)
+					client.conn.Close()
+					delete(groupClients, client)
+				}
+			}
+		}
+		groupClientsMu.Unlock()
+	}
 }

@@ -12,7 +12,7 @@ type GroupChatMessage struct {
     AuthorID   string `json:"author_id"`
     ChatID     string `json:"chat_id"`
     CreatedAt  string `json:"created_at"`
-    AuthorName string `json:"author_name"` 
+    AuthorName string `json:"author_name"`
 }
 
 func GetGroupChatHistory(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,8 @@ func fetchGroupChatHistory(chatID string) ([]GroupChatMessage, error) {
         INNER JOIN users u ON gcm.author_id = u.user_id
         WHERE gcm.chat_id = ?
         ORDER BY gcm.created_at ASC
-    `
+
+        `
     rows, err := db.Query(query, chatID)
     if err != nil {
         return nil, err
