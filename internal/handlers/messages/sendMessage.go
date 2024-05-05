@@ -8,8 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
 	database "social/internal/db"
+
+	"github.com/gorilla/websocket"
 )
 
 type SendMessageRequest struct {
@@ -126,7 +127,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 			if client.chatID == data.ChatID {
 				err := client.conn.WriteJSON(response)
 				if err != nil {
-					log.Printf("Ошибка записи: %v", err)
+					log.Printf("Websocket writing error: %v", err)
 					client.conn.Close()
 					delete(clients, client)
 				}

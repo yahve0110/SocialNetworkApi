@@ -10,6 +10,7 @@ import (
 	groupPostHandlers "social/internal/handlers/group/groupPosts"
 	groupInviteHandlers "social/internal/handlers/group/invitesAndRequests"
 	messageHandlers "social/internal/handlers/messages"
+	"social/internal/handlers/notifications"
 	postHandler "social/internal/handlers/post"
 	userHandlers "social/internal/handlers/user"
 	userFeedHandler "social/internal/handlers/userFeed"
@@ -90,10 +91,11 @@ func DefineRoutes() *Router {
 
 	router.Handle("POST", "/joinGroupChat", middleware.LogMiddleware(groupChat.JoinGroupChatHandler), middleware.AuthMiddleware)
 	router.Handle("GET", "/getGroupChatHistory", middleware.LogMiddleware(groupChat.GetGroupChatHistory), middleware.AuthMiddleware)
-	//router.Handle("POST", "/sendGroupChatMessage", middleware.LogMiddleware(groupChat.SendGroupChatMessage), middleware.AuthMiddleware)
 	router.Handle("GET", "/getGroupChats", middleware.LogMiddleware(groupChat.GetGroupChats), middleware.AuthMiddleware)
 
-
+	router.Handle("POST", "/sendNotification", middleware.LogMiddleware(notifications.ReceiveNotification), middleware.AuthMiddleware)
+	router.Handle("GET", "/getNotifications", middleware.LogMiddleware(notifications.GetNotifications), middleware.AuthMiddleware)
+	router.Handle("DELETE", "/deleteNotification", middleware.LogMiddleware(notifications.DeleteNotification), middleware.AuthMiddleware)
 
 
 	return router

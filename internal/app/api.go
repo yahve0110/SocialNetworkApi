@@ -11,6 +11,7 @@ import (
 	database "social/internal/db"
 	groupChat "social/internal/handlers/group/groupMessages"
 	messageHandlers "social/internal/handlers/messages"
+	"social/internal/handlers/notifications"
 	"social/internal/middleware"
 	myrouter "social/internal/router"
 )
@@ -26,11 +27,6 @@ func New(config *Config) *API {
 		config: config,
 	}
 }
-
-
-
-
-
 
 // Start initializes server loggers, router, database, etc.
 func (api *API) Start() error {
@@ -59,9 +55,11 @@ func (api *API) Start() error {
 	http.Handle("/", middleware.CORSMiddleware(routerWithMiddleware))
 	http.HandleFunc("/ws", messageHandlers.HandleConnections)
 	http.HandleFunc("/wsGroupChat", groupChat.HandleGroupChatConnections)
+	http.HandleFunc("/Wsnotifications", notifications.HandleConnectionsNotif)
 
 	go messageHandlers.HandleMessages()
-	go  groupChat.HandleGroupMessages()
+	go groupChat.HandleGroupMessages()
+	go notifications.HandleNotifications()
 	// Initialize database
 	db, err := database.InitDB("./internal/db/database.db")
 	if err != nil {

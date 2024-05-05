@@ -313,7 +313,18 @@ func CreateAllTables(db *sql.DB) error {
 		UNIQUE(session_id)
 	);
 
-
+	CREATE TABLE IF NOT EXISTS notifications (
+        notification_id TEXT NOT NULL,
+        receiver_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        content TEXT NOT NULL,
+		created_at TIMESTAMP NOT NULL,
+        sender_id TEXT,
+		group_id TEXT,
+		FOREIGN KEY (receiver_id) REFERENCES users(user_id),
+		FOREIGN KEY (sender_id) REFERENCES users(user_id),
+		FOREIGN KEY (group_id) REFERENCES groups(group_id)
+	);
 
 
     `

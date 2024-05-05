@@ -42,7 +42,7 @@ func GetAllGroupMembers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Query the database to get all members of the group
-	members, err := getAllGroupMembersFromDatabase(dbConnection, groupID, userID)
+	members, err := GetAllGroupMembersFromDatabase(dbConnection, groupID, userID)
 	if err != nil {
 		log.Printf("Error fetching group members from database: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -61,7 +61,7 @@ func GetAllGroupMembers(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Response: %v", members) // Log response for debugging
 }
 
-func getAllGroupMembersFromDatabase(dbConnection *sql.DB, groupID, userID string) (GroupMembersResponse, error) {
+func GetAllGroupMembersFromDatabase(dbConnection *sql.DB, groupID, userID string) (GroupMembersResponse, error) {
 	var response GroupMembersResponse
 
 	// Query the database to get all members of the group

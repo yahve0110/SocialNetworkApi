@@ -225,3 +225,5 @@ func RetrieveUsersNotGoingToEvent(db *sql.DB, eventID string) ([]string, error) 
 
 	return usersNotGoing, nil
 }
+
+
