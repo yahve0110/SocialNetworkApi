@@ -24,7 +24,7 @@ type SendMessageResponse struct {
 var (
 	clients   = make(map[*clientInfo]bool)
 	broadcast = make(chan SendMessageResponse)
-	clientsMu sync.Mutex // мьютекс для синхронизации доступа к clients
+	clientsMu sync.Mutex 
 )
 
 type MessageData struct {
@@ -50,7 +50,6 @@ func HandleConnectionsNotif(w http.ResponseWriter, r *http.Request) {
 	func() {
 		for {
 			var data MessageData
-			// Read messages from WebSocket and decode into MessageData
 			err := ws.ReadJSON(&data)
 
 			fmt.Println(data.Type)
@@ -69,13 +68,11 @@ func HandleConnectionsNotif(w http.ResponseWriter, r *http.Request) {
 				}
 
 				for _, member := range members.Members {
-					// Отправляем уведомление каждому участнику
 					notification := SendMessageResponse{
 						Text:   data.Message,
 						UserID: member.UserID,
 					}
 
-					// Отправляем уведомление в канал broadcast
 					broadcast <- notification
 				}
 			}

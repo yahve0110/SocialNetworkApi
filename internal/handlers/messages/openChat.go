@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// ChatHistory представляет историю сообщений чата
 type ChatHistory struct {
 	ChatID    string        `json:"chat_id"`
 	Messages  []ChatMessage `json:"messages"`
@@ -22,7 +21,6 @@ type RequestBody struct {
 	UserID2 string `json:"user_id_2"`
 }
 
-// OpenChat обрабатывает запрос на историю сообщений приватного чата
 func OpenChat(w http.ResponseWriter, r *http.Request) {
 	dbConnection := database.DB
 	// Get the user ID based on the current user's session
@@ -48,7 +46,6 @@ func OpenChat(w http.ResponseWriter, r *http.Request) {
 
 	userID2 := requestBody.UserID2
 
-	// Проверка существования пользователя с заданным userID2
 	var userExists bool
 	err = dbConnection.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = ?)", userID2).Scan(&userExists)
 	if err != nil {
@@ -61,15 +58,12 @@ func OpenChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем существует ли приватный чат между двумя пользователями
 	var chatID string
 	err = dbConnection.QueryRow("SELECT chat_id FROM privatechat WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)", userID1, userID2, userID2, userID1).Scan(&chatID)
 	if err == sql.ErrNoRows {
-		// Если чат не найден, создаем новый чат
 
 		newChatID := uuid.New().String()
-		fmt.Println("USER ID 1", userID1)
-		fmt.Println("USER ID 2", userID2)
+	
 
 		_, err := dbConnection.Exec("INSERT INTO privatechat (chat_id, user1_id, user2_id) VALUES (?, ?, ?)", newChatID, userID1, userID2)
 		if err != nil {
@@ -77,7 +71,6 @@ func OpenChat(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Возвращаем пустой список сообщений
 		json.NewEncoder(w).Encode(ChatHistory{ChatID: newChatID, FoundChat: false})
 		return
 	} else if err != nil {
@@ -85,7 +78,6 @@ func OpenChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем историю сообщений чата
 	rows, err := dbConnection.Query("SELECT message_author_id, content, timestamp FROM privatechat_messages WHERE chat_id = ?", chatID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error getting chat history: %v", err), http.StatusInternalServerError)
@@ -101,10 +93,9 @@ func OpenChat(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Error scanning message: %v", err), http.StatusInternalServerError)
 			return
 		}
-		message.ChatID = chatID // Установка идентификатора чата в сообщении
+		message.ChatID = chatID
 		messages = append(messages, message)
 	}
 
-	// Возвращаем историю сообщений чата
 	json.NewEncoder(w).Encode(ChatHistory{ChatID: chatID, Messages: messages, FoundChat: true})
 }

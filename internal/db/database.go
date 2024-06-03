@@ -64,14 +64,6 @@ func InitDB(dbPath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("error initializing tables: %v", err)
 	}
 
-	// Apply migrations
-	// migrationsPath := "./internal/db/migrations"
-	// if err := MigrateDB(dbPath, migrationsPath); err != nil {
-
-	// 	log.Printf("Error applying migrations: %v", err)
-	// 	db.Close()
-	// 	return nil, fmt.Errorf("error applying migrations: %v", err)
-	// }
 	DB = db
 	return db, nil
 }

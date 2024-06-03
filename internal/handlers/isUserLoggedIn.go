@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"social/internal/db"
+	database "social/internal/db"
 	"time"
 )
 
@@ -23,7 +23,6 @@ func IsSessionValid(w http.ResponseWriter, r *http.Request) {
 
 	sessionID := sessionReq.SessionID
 
-	fmt.Println("Session ID: ", sessionID)
 	dbConnection := database.DB
 
 	// Query the sessions table to check if the session is valid

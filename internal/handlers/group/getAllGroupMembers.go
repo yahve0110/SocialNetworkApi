@@ -25,7 +25,6 @@ func GetAllGroupMembers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Group ID is required", http.StatusBadRequest)
 		return
 	}
-	log.Printf("Group ID: %s", groupID) // Log group ID for debugging
 
 	// Get the user ID based on the current user's session
 	cookie, err := r.Cookie("sessionID")
@@ -58,7 +57,6 @@ func GetAllGroupMembers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Response: %v", members) // Log response for debugging
 }
 
 func GetAllGroupMembersFromDatabase(dbConnection *sql.DB, groupID, userID string) (GroupMembersResponse, error) {
@@ -70,7 +68,6 @@ func GetAllGroupMembersFromDatabase(dbConnection *sql.DB, groupID, userID string
         FROM users u
         JOIN group_members gm ON u.user_id = gm.user_id
         WHERE gm.group_id = $1`
-	log.Printf("SQL Query: %s, Group ID: %s", query, groupID) // Log SQL query and group ID for debugging
 
 	rows, err := dbConnection.Query(query, groupID)
 	if err != nil {

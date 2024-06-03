@@ -105,14 +105,26 @@ func GetUserByID(db *sql.DB, userID string) (models.User, error) {
 }
 
 func GetUserIDByUsername(db *sql.DB, username string) (string, error) {
-    var userID string
+	var userID string
 
-    // Prepare the SQL statement to select the user ID based on the username
-    query := "SELECT user_id FROM users WHERE username = ? LIMIT 1"
-    err := db.QueryRow(query, username).Scan(&userID)
-    if err != nil {
-        return "", err
-    }
+	// Prepare the SQL statement to select the user ID based on the username
+	query := "SELECT user_id FROM users WHERE username = ? LIMIT 1"
+	err := db.QueryRow(query, username).Scan(&userID)
+	if err != nil {
+		return "", err
+	}
 
-    return userID, nil
+	return userID, nil
+}
+
+func GetUsernameByEmail(dbConnection *sql.DB, email string) (string, error) {
+	var username string
+	err := dbConnection.QueryRow("SELECT username FROM users WHERE email = ?", email).Scan(&username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("email not found")
+		}
+		return "", fmt.Errorf("error retrieving username by email: %v", err)
+	}
+	return username, nil
 }

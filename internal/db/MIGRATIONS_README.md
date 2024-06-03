@@ -27,7 +27,7 @@ In 202202201600_add_field_to_posts_table.down.sql, add the SQL query to revert t
 
 
 ALTER TABLE posts
-DROP COLUMN new_field;
+DROP COLUMN new_field;я
 3. Apply the Migration
 Run the following command to apply the new migration:
 

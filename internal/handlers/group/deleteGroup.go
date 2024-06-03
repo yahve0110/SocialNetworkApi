@@ -28,8 +28,7 @@ func DeleteGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("ENTERED GROUP DELETE")
-	log.Printf("User ID: %s", userID)
+
 
 	// Check if the user is the creator of the group
 	groupID := r.FormValue("group_id")
@@ -127,7 +126,6 @@ func DeleteGroupAndAssociatedData(db *sql.DB, groupID string) error {
 	return nil
 }
 
-// deleteImagesFromCloud удаляет изображения из облачного хранилища, если они есть
 func deleteImagesFromCloud(imageURLs []string) error {
 	for _, imageURL := range imageURLs {
 		if imageURL != "" {
@@ -139,29 +137,24 @@ func deleteImagesFromCloud(imageURLs []string) error {
 	return nil
 }
 
-// deletePostsByGroupID удаляет все посты связанные с группой
 func deletePostsByGroupID(tx *sql.Tx, groupID string, db *sql.DB) error {
-	// Запрос для получения всех постов связанных с группой
 	rows, err := tx.Query("SELECT post_id FROM group_posts WHERE group_id = ?", groupID)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
-	// Проходим по каждому посту
 	for rows.Next() {
 		var postID string
 		if err := rows.Scan(&postID); err != nil {
 			return err
 		}
-		// Удаляем комментарии для текущего поста
 		if err := deleteCommentsByPostID(tx, postID, db); err != nil {
 			tx.Rollback()
 			return err
 		}
 	}
 
-	// Удаляем все посты связанные с группой из базы данных
 	_, err = tx.Exec("DELETE FROM group_posts WHERE group_id = ?", groupID)
 	if err != nil {
 		return err
@@ -170,9 +163,7 @@ func deletePostsByGroupID(tx *sql.Tx, groupID string, db *sql.DB) error {
 	return nil
 }
 
-// deleteEventsByGroupID удаляет все события связанные с группой
 func deleteEventsByGroupID(tx *sql.Tx, groupID string, db *sql.DB) error {
-	// Запрос для получения URL изображений событий, связанных с группой
 	rows, err := tx.Query("SELECT event_img FROM group_events WHERE group_id = ?", groupID)
 	if err != nil {
 		return err
@@ -180,7 +171,6 @@ func deleteEventsByGroupID(tx *sql.Tx, groupID string, db *sql.DB) error {
 	defer rows.Close()
 
 	var imageURLs []string
-	// Собираем URL изображений
 	for rows.Next() {
 		var imageURL string
 		if err := rows.Scan(&imageURL); err != nil {
@@ -189,12 +179,10 @@ func deleteEventsByGroupID(tx *sql.Tx, groupID string, db *sql.DB) error {
 		imageURLs = append(imageURLs, imageURL)
 	}
 
-	// Удаляем изображения из облачного хранилища
 	if err := deleteImagesFromCloud(imageURLs); err != nil {
 		return err
 	}
 
-	// Удаляем все события, связанные с группой, из базы данных
 	_, err = tx.Exec("DELETE FROM group_events WHERE group_id = ?", groupID)
 	if err != nil {
 		return err
@@ -203,9 +191,7 @@ func deleteEventsByGroupID(tx *sql.Tx, groupID string, db *sql.DB) error {
 	return nil
 }
 
-// deleteCommentsByPostID удаляет все комментарии, связанные с указанным постом
 func deleteCommentsByPostID(tx *sql.Tx, postID string, db *sql.DB) error {
-	// Запрос для получения URL изображений комментариев, связанных с постом
 	rows, err := tx.Query("SELECT image FROM comments WHERE post_id = ?", postID)
 	if err != nil {
 		return err
@@ -213,7 +199,6 @@ func deleteCommentsByPostID(tx *sql.Tx, postID string, db *sql.DB) error {
 	defer rows.Close()
 
 	var imageURLs []string
-	// Собираем URL изображений
 	for rows.Next() {
 		var imageURL string
 		if err := rows.Scan(&imageURL); err != nil {
@@ -222,12 +207,10 @@ func deleteCommentsByPostID(tx *sql.Tx, postID string, db *sql.DB) error {
 		imageURLs = append(imageURLs, imageURL)
 	}
 
-	// Удаляем изображения из облачного хранилища
 	if err := deleteImagesFromCloud(imageURLs); err != nil {
 		return err
 	}
 
-	// Удаляем все комментарии, связанные с постом, из базы данных
 	_, err = tx.Exec("DELETE FROM comments WHERE post_id = ?", postID)
 	if err != nil {
 		return err

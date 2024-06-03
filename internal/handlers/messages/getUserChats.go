@@ -22,7 +22,6 @@ type ChatInfo struct {
 func GetUserChats(w http.ResponseWriter, r *http.Request) {
 	dbConnection := database.DB
 
-	// Получение идентификатора текущего пользователя из сессии
 	cookie, err := r.Cookie("sessionID")
 	if err != nil {
 		http.Error(w, "User not authenticated", http.StatusUnauthorized)
@@ -34,7 +33,6 @@ func GetUserChats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Запрос к базе данных для получения всех приватных чатов текущего пользователя
 	rows, err := dbConnection.Query(`
 		SELECT pc.chat_id, CASE WHEN pc.user1_id = ? THEN pc.user2_id ELSE pc.user1_id END AS interlocutor_id,
 		u.first_name, u.last_name, u.profile_picture,
@@ -58,41 +56,38 @@ func GetUserChats(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	// Срез для хранения информации о чатах
 	var chatsInfo []ChatInfo
 
-	// Итерация по результатам запроса
-	// Итерация по результатам запроса
+
 	for rows.Next() {
 		var chatInfo ChatInfo
-		var lastMessage, lastMessageTime sql.NullString // Используйте тип sql.NullString для сканирования NULL значений из базы данных
+		var lastMessage, lastMessageTime sql.NullString
 
 		err := rows.Scan(
 			&chatInfo.ChatID, &chatInfo.InterlocutorID,
 			&chatInfo.FirstName, &chatInfo.LastName, &chatInfo.ProfilePicture,
-			&lastMessage, &lastMessageTime, // Используйте sql.NullString вместо string
+			&lastMessage, &lastMessageTime,
 		)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error scanning chat info: %v", err), http.StatusInternalServerError)
 			return
 		}
 
-		// Присваиваем значения полям ChatInfo, обрабатывая NULL значения
+
 		if lastMessage.Valid {
-			chatInfo.LastMessage = lastMessage.String // Если значение не NULL, присваиваем его
+			chatInfo.LastMessage = lastMessage.String
 		} else {
-			chatInfo.LastMessage = "" // Если значение NULL, присваиваем пустую строку
+			chatInfo.LastMessage = ""
 		}
 
 		if lastMessageTime.Valid {
-			chatInfo.LastMessageTime = lastMessageTime.String // Если значение не NULL, присваиваем его
+			chatInfo.LastMessageTime = lastMessageTime.String
 		} else {
-			chatInfo.LastMessageTime = "" // Если значение NULL, присваиваем пустую строку
+			chatInfo.LastMessageTime = ""
 		}
 
 		chatsInfo = append(chatsInfo, chatInfo)
 	}
 
-	// Возвращение списка информации о чатах в формате JSON
 	json.NewEncoder(w).Encode(chatsInfo)
 }

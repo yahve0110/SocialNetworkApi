@@ -47,7 +47,6 @@ func GetRequestedGroups(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(groupRequests)
 }
 
-// getGroupRequestsSentFromDatabase fetches all group requests sent by the user
 // getGroupRequestsSentFromDatabase fetches all group requests sent by the user with group names
 func getGroupRequestsSentFromDatabase(dbConnection *sql.DB, userID string) ([]GroupRequestWithName, error) {
 	// Query group requests from the "group_requests" table sent by the user with group names

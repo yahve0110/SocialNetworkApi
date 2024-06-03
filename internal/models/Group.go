@@ -46,7 +46,7 @@ type GroupRequest struct {
 	GroupID   string `json:"group_id"`
 	UserID    string `json:"user_id"`
 	Status    string `json:"status"`
-	User      User   `json:"user"` // Add a User field to store user details
+	User      User   `json:"user"` 
 }
 
 type GroupPost struct {

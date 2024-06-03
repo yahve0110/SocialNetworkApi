@@ -46,7 +46,6 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPostsByUserID retrieves all posts created by a user with the given user ID, sorted by creation date (newest first)
-// GetPostsByUserID retrieves all posts created by a user with the given user ID, sorted by creation date (newest first)
 func GetPostsByUserID(db *sql.DB, userID string) ([]models.Post, error) {
     query := `
         SELECT
@@ -96,7 +95,6 @@ func GetPostsByUserID(db *sql.DB, userID string) ([]models.Post, error) {
             return nil, fmt.Errorf("error scanning post rows: %v", err)
         }
 
-        // Если пост имеет статус "almost private", получаем список пользователей, которым доступен пост
         if post.Private == "almost private" {
             allowedUsers, err := GetAllowedUsersForPost(db, post.PostID)
             if err != nil {
@@ -117,7 +115,6 @@ func GetPostsByUserID(db *sql.DB, userID string) ([]models.Post, error) {
     return posts, nil
 }
 
-// GetAllowedUsersForPost возвращает массив идентификаторов пользователей, которым доступен пост с указанным идентификатором
 func GetAllowedUsersForPost(db *sql.DB, postID string) ([]string, error) {
     query := `SELECT user_id FROM post_permissions WHERE post_id = ?`
     rows, err := db.Query(query, postID)

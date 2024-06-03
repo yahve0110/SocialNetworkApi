@@ -90,7 +90,6 @@ func GetCommentsByPostID(db *sql.DB, postID string) ([]models.Comment, error) {
         comments = append(comments, comment)
     }
 
-    // Если нет комментариев, возвращаем пустой массив
     if len(comments) == 0 {
         return nil, nil
     }

@@ -70,7 +70,6 @@ func AddCommentLike(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// GetCommentLikesCount возвращает количество лайков для данного комментария
 func GetCommentLikesCount(dbConnection *sql.DB, commentID string) (int, error) {
 	var likesCount int
 	err := dbConnection.QueryRow("SELECT COUNT(*) FROM CommentLikes WHERE comment_id = ?", commentID).Scan(&likesCount)

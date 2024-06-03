@@ -8,7 +8,6 @@ import (
 	"social/internal/helpers"
 )
 
-// getNotifications обрабатывает HTTP-запрос для получения уведомлений
 func GetNotifications(w http.ResponseWriter, r *http.Request) {
 
 	dbConnection := database.DB
@@ -27,23 +26,19 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получение последних 15 уведомлений для пользователя с указанным идентификатором
 	notifications, err := fetchNotifications(userID)
 	if err != nil {
 		http.Error(w, "Failed to fetch notifications", http.StatusInternalServerError)
 		return
 	}
 
-	// Преобразование уведомлений в формат JSON и отправка в ответ
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(notifications)
 }
 
-// fetchNotifications извлекает последние 15 уведомлений для пользователя с указанным идентификатором
 func fetchNotifications(userID string) ([]Notification, error) {
 	db := database.DB
 
-	// Подготовка SQL-запроса для извлечения последних 15 уведомлений для пользователя
 	query := `
 		SELECT notification_id, receiver_id, type, content, created_at, sender_id, group_id
 		FROM notifications
@@ -59,7 +54,6 @@ func fetchNotifications(userID string) ([]Notification, error) {
 	}
 	defer rows.Close()
 
-	// Проход по результатам запроса и сканирование в структуру Notification
 	var notifications []Notification
 	for rows.Next() {
 		var notification Notification

@@ -36,7 +36,7 @@ type SendMessageResponse struct {
 var (
 	groupClients   = make(map[*clientInfo]bool)
 	groupBroadcast = make(chan SendMessageResponse)
-	groupClientsMu sync.Mutex // мьютекс для синхронизации доступа к groupClients
+	groupClientsMu sync.Mutex
 )
 
 type MessageData struct {
@@ -48,7 +48,7 @@ type MessageData struct {
 type clientInfo struct {
 	conn *websocket.Conn
 
-	chatID string // Добавляем поле chatID
+	chatID string
 }
 
 type UserInfo struct {
@@ -58,7 +58,7 @@ type UserInfo struct {
 }
 
 func HandleGroupChatConnections(w http.ResponseWriter, r *http.Request) {
-	chatID := r.URL.Query().Get("chatID") // Получаем chatID из запроса
+	chatID := r.URL.Query().Get("chatID")
 
 	// Upgrade the HTTP connection to WebSocket
 	ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
@@ -93,14 +93,12 @@ func HandleGroupChatConnections(w http.ResponseWriter, r *http.Request) {
 		}
 
 		msgTime := time.Now()
-		// Вставка сообщения в базу данных
 		err = saveGroupChatMessage(data, msgTime)
 		if err != nil {
 			log.Printf("Error saving message: %v", err)
 			break
 		}
 
-		// Получение информации об авторе сообщения
 		authorInfo, err := getUserInfo(data.UserID, dbConnection)
 		if err != nil {
 			log.Printf("Error fetching user information: %v", err)
@@ -118,7 +116,6 @@ func HandleGroupChatConnections(w http.ResponseWriter, r *http.Request) {
 			ProfilePicture:  authorInfo.ProfilePicture,
 		}
 
-		// Отправка сообщения всем участникам чата
 		groupClientsMu.Lock()
 		for client := range groupClients {
 			if client.chatID == data.ChatID {
@@ -137,7 +134,6 @@ func HandleGroupChatConnections(w http.ResponseWriter, r *http.Request) {
 func saveGroupChatMessage(message MessageData, timestamp time.Time) error {
 	db := database.DB
 
-	// Generate unique message ID
 	messageID := uuid.New().String()
 
 	// Insert message into database
@@ -163,10 +159,8 @@ func getUserInfo(userID string, db *sql.DB) (UserInfo, error) {
 func HandleGroupMessages() {
 
 	for {
-		// Получение сообщения из общего канала
 		msg := <-groupBroadcast
 
-		// Отправка сообщения всем участникам чата
 		groupClientsMu.Lock()
 		for client := range groupClients {
 			if client.chatID == msg.ChatID {

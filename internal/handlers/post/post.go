@@ -50,7 +50,6 @@ func AddPost(w http.ResponseWriter, r *http.Request) {
 		for _, userID := range newPost.PrivateUsersArr {
 			_, err := dbConnection.Exec("INSERT INTO post_permissions (user_id, post_id) VALUES (?, ?)", userID, newPost.PostID)
 			if err != nil {
-				// Обработка ошибок
 				fmt.Println("Error while adding permission:", err)
 			}
 		}

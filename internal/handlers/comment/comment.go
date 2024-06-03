@@ -13,7 +13,6 @@ import (
 
 // Modify the AddComment function
 func AddComment(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("comment")
 
 	var newComment models.Comment
 
@@ -75,7 +74,6 @@ func AddComment(w http.ResponseWriter, r *http.Request) {
 	if commentImageBase64 != "" {
         cloudinaryURL, err := helpers.ImageToCloud(commentImageBase64, w)
         if err != nil {
-            // Handle error
             return
         }
         newComment.Image = cloudinaryURL

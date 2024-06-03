@@ -86,10 +86,8 @@ func IsUserCommentCreator(db *sql.DB, userID, commentID string) (bool, error) {
 }
 
 func GetCommentImageURLFromDatabase(db *sql.DB, postID string) (string, error) {
-	// Подготовьте SQL-запрос для извлечения URL изображения из базы данных
 	query := "SELECT image FROM comments WHERE comment_id  = ?"
 
-	// Выполните запрос к базе данных
 	var imageURL string
 	err := db.QueryRow(query, postID).Scan(&imageURL)
 	if err != nil {

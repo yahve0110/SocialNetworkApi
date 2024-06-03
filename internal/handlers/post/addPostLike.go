@@ -2,7 +2,7 @@ package postHandler
 
 import (
 	"encoding/json"
-	
+
 	"net/http"
 	"social/internal/db"
 	"social/internal/helpers"
@@ -14,10 +14,8 @@ type PostLike struct {
 }
 
 func AddPostLike(w http.ResponseWriter, r *http.Request) {
-	// Получаем глобальное соединение с базой данных из пакета db
 	dbConnection := database.DB
 
-	// Получаем ID пользователя из сессии (предполагается, что ID сессии хранится в cookie)
 	sessionID, err := r.Cookie("sessionID")
 	if err != nil {
 		http.Error(w, "Failed to get session ID from cookie", http.StatusBadRequest)
@@ -30,7 +28,6 @@ func AddPostLike(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Разбираем тело запроса, чтобы получить данные о лайке к посту
 	var postLike PostLike
 	err = json.NewDecoder(r.Body).Decode(&postLike)
 	if err != nil {
@@ -38,11 +35,9 @@ func AddPostLike(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем, поставил ли пользователь уже лайк к данному посту
 	var existingUserID string
 	err = dbConnection.QueryRow("SELECT user_id FROM postLikes WHERE post_id = ? AND user_id = ?", postLike.PostID, userID).Scan(&existingUserID)
 	if err != nil && err != sql.ErrNoRows {
-		// Если произошла другая ошибка, возвращаем ошибку сервера
 		http.Error(w, "Failed to check existing post like: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -63,7 +58,6 @@ func AddPostLike(w http.ResponseWriter, r *http.Request) {
     }
 
 
-	// Получаем общее количество лайков к посту
 	var likesCount int
 	err = dbConnection.QueryRow("SELECT COUNT(*) FROM postLikes WHERE post_id = ?", postLike.PostID).Scan(&likesCount)
 	if err != nil {
@@ -71,7 +65,6 @@ func AddPostLike(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Отвечаем успешным статусом и отправляем количество лайков в ответе
 	w.WriteHeader(http.StatusOK)
 	responseData := map[string]interface{}{
 		"likes_count": likesCount,

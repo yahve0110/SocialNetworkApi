@@ -18,14 +18,12 @@ type GroupChatMessage struct {
 func GetGroupChatHistory(w http.ResponseWriter, r *http.Request) {
     chatID := r.URL.Query().Get("chat_id")
 
-    // Получение групповой истории чата из базы данных
     chatHistory, err := fetchGroupChatHistory(chatID)
     if err != nil {
         http.Error(w, "Failed to fetch group chat history", http.StatusInternalServerError)
         return
     }
 
-    // Преобразование результата в формат JSON и отправка в ответ
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(chatHistory)
 }
@@ -33,7 +31,6 @@ func GetGroupChatHistory(w http.ResponseWriter, r *http.Request) {
 func fetchGroupChatHistory(chatID string) ([]GroupChatMessage, error) {
     db := database.DB
 
-    // Запрос на получение сообщений из группового чата, включая имя автора
     query := `
         SELECT gcm.message_id, gcm.content, gcm.author_id, gcm.chat_id, gcm.created_at, u.first_name
         FROM group_chat_messages gcm
@@ -48,7 +45,6 @@ func fetchGroupChatHistory(chatID string) ([]GroupChatMessage, error) {
     }
     defer rows.Close()
 
-    // Проход по результатам запроса и сканирование в структуру GroupChatMessage
     var chatHistory []GroupChatMessage
     for rows.Next() {
         var message GroupChatMessage

@@ -1,5 +1,3 @@
-// api/api.go
-
 package api
 
 import (
@@ -57,9 +55,11 @@ func (api *API) Start() error {
 	http.HandleFunc("/wsGroupChat", groupChat.HandleGroupChatConnections)
 	http.HandleFunc("/Wsnotifications", notifications.HandleConnectionsNotif)
 
+	//run websocket listeners in go routines
 	go messageHandlers.HandleMessages()
 	go groupChat.HandleGroupMessages()
 	go notifications.HandleNotifications()
+
 	// Initialize database
 	db, err := database.InitDB("./internal/db/database.db")
 	if err != nil {

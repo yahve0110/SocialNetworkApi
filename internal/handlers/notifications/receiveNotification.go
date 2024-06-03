@@ -23,7 +23,6 @@ type Notification struct {
 	GroupID    string `json:"group_id"`
 }
 
-// ReceiveNotification обрабатывает HTTP-запрос для получения уведомлений
 func ReceiveNotification(w http.ResponseWriter, r *http.Request) {
 	var notification Notification
 	dbConnection := database.DB
@@ -42,7 +41,6 @@ func ReceiveNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Декодирование JSON-данных из тела запроса в структуру Notification
 	err = json.NewDecoder(r.Body).Decode(&notification)
 	if err != nil {
 		http.Error(w, "Failed to decode notification data", http.StatusBadRequest)
@@ -60,13 +58,11 @@ func ReceiveNotification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	notification.ID = uuid.New().String()
-	// Установка текущего времени в поле CreatedAt
 	notification.CreatedAt = time.Now().Format(time.RFC3339)
 
 	notification.SenderID = userID
 
 	if notification.Type == "group_event" {
-		// Получаем список участников группы
 		memberIDs, err := getGroupMembers(notification.GroupID)
 		if err != nil {
 			http.Error(w, "Failed to get group members: "+err.Error(), http.StatusInternalServerError)
@@ -93,14 +89,12 @@ func ReceiveNotification(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Сохранение уведомления в базу данных
 	err = SaveNotification(notification)
 	if err != nil {
 		http.Error(w, "Failed to save notification", http.StatusInternalServerError)
 		return
 	}
 
-	// Отправка успешного ответа
 	w.WriteHeader(http.StatusOK)
 }
 

@@ -15,7 +15,6 @@ import (
 )
 
 // CreateGroupPostHandler handles the creation of posts in a group
-// CreateGroupPostHandler handles the creation of posts in a group
 func CreateGroupPostHandler(w http.ResponseWriter, r *http.Request) {
 	var postData models.GroupPost
 
@@ -68,8 +67,6 @@ func CreateGroupPostHandler(w http.ResponseWriter, r *http.Request) {
 	//create postId
 	postData.PostID = uuid.New().String()
 
-
-
 	//upload group image to cloud storage
 	postImageBase64 := postData.Image
 	if postImageBase64 != "" {
@@ -117,7 +114,7 @@ func InsertGroupPost(db *sql.DB, post models.GroupPost) error {
 	defer stmt.Close()
 
 	// Execute the SQL statement
-	_, err = stmt.Exec(post.PostID, post.GroupID, post.AuthorID, post.Content, post.CreatedAt,post.Image)
+	_, err = stmt.Exec(post.PostID, post.GroupID, post.AuthorID, post.Content, post.CreatedAt, post.Image)
 	if err != nil {
 		log.Printf("Error executing SQL statement: %v", err)
 		return err
@@ -127,18 +124,18 @@ func InsertGroupPost(db *sql.DB, post models.GroupPost) error {
 }
 
 func GetUserFirstNameAndLastName(db *sql.DB, userID string) (string, string, error) {
-    // Prepare the SQL statement to fetch the user's first name and last name
-    query := "SELECT first_name, last_name FROM users WHERE user_id = ?"
+	// Prepare the SQL statement to fetch the user's first name and last name
+	query := "SELECT first_name, last_name FROM users WHERE user_id = ?"
 
-    // Execute the SQL query to fetch the user's first name and last name
-    row := db.QueryRow(query, userID)
+	// Execute the SQL query to fetch the user's first name and last name
+	row := db.QueryRow(query, userID)
 
-    var firstName, lastName string
-    // Scan the query result into variables
-    err := row.Scan(&firstName, &lastName)
-    if err != nil {
-        return "", "", err
-    }
+	var firstName, lastName string
+	// Scan the query result into variables
+	err := row.Scan(&firstName, &lastName)
+	if err != nil {
+		return "", "", err
+	}
 
-    return firstName, lastName, nil
+	return firstName, lastName, nil
 }

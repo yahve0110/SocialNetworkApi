@@ -58,28 +58,23 @@ func JoinGroupChatHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "User joined group chat successfully"})
 }
 
-// addUserToGroupChat добавляет нового пользователя в таблицу участников группового чата
 func addUserToGroupChat(userID, groupID string, db *sql.DB) error {
-	// Проверяем, существует ли уже запись для данного пользователя и группы
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM group_chat_members WHERE member_id = ? AND chat_id = ?", userID, groupID).Scan(&count)
 	if err != nil {
 		return err
 	}
 
-	// Если запись уже существует, возвращаем ошибку
 	if count > 0 {
 		return errors.New("user already joined this group chat")
 	}
 
-	// Подготовка SQL-запроса
 	stmt, err := db.Prepare("INSERT INTO group_chat_members (member_id, chat_id) VALUES (?, ?)")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	// Выполнение SQL-запроса
 	_, err = stmt.Exec(userID, groupID)
 	if err != nil {
 		return err

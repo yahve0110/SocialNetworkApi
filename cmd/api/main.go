@@ -2,14 +2,8 @@ package main
 
 import (
 	"log"
-	"social/internal/app"
+	api "social/internal/app"
 )
-
-var ()
-
-func init() {
-
-}
 
 func main() {
 	config, err := api.ReadConfigFromFile("./configs/config.json")

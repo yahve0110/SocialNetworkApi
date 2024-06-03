@@ -28,7 +28,6 @@ type SendMessageResponse struct {
 	ProfilePicture  string    `json:"profile_picture"`
 }
 
-// Структура для хранения сообщений
 type MessageData struct {
 	ChatID  string `json:"chat_id"`
 	UserID  string `json:"user_id"`
@@ -38,18 +37,18 @@ type MessageData struct {
 type clientInfo struct {
 	conn   *websocket.Conn
 	userID string
-	chatID string // Добавляем поле chatID
+	chatID string
 }
 
 var (
 	clients   = make(map[*clientInfo]bool)
 	broadcast = make(chan SendMessageResponse)
-	clientsMu sync.Mutex // мьютекс для синхронизации доступа к clients
+	clientsMu sync.Mutex
 )
 
 func HandleConnections(w http.ResponseWriter, r *http.Request) {
 	userID := r.URL.Query().Get("userID")
-	chatID := r.URL.Query().Get("chatID") // Получаем chatID из запроса
+	chatID := r.URL.Query().Get("chatID")
 
 	// Upgrade the HTTP connection to WebSocket
 	ws, err := websocket.Upgrade(w, r, nil, 1024, 1024)
@@ -85,23 +84,12 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 		}
 
 		msgTime := time.Now()
-		// Вставка сообщения в базу данных
-		// Insert the message into the database
 		_, err = dbConnection.Exec("INSERT INTO privatechat_messages (chat_id, message_author_id, content, timestamp) VALUES (?, ?, ?, ?)",
 			data.ChatID, data.UserID, data.Message, msgTime)
 		if err != nil {
 			log.Printf("Error inserting message into database: %v", err)
 			break
 		}
-
-		// Получение списка участников чата
-		participants, err := GetChatParticipants(data.ChatID, dbConnection)
-		if err != nil {
-			log.Printf("Error getting chat participants: %v", err)
-			break
-		}
-
-		fmt.Println("PARTICIPANTS:", participants)
 
 		var firstName, lastName, profilePicture string
 		err = dbConnection.QueryRow("SELECT first_name, last_name, profile_picture FROM users WHERE user_id = ?", data.UserID).Scan(&firstName, &lastName, &profilePicture)
@@ -121,7 +109,6 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 			ProfilePicture:  profilePicture,
 		}
 
-		// Отправка сообщения всем участникам чата, включая отправителя
 		clientsMu.Lock()
 		for client := range clients {
 			if client.chatID == data.ChatID {
@@ -141,17 +128,14 @@ func HandleMessages() {
 	dbConnection := database.DB
 
 	for {
-		// Получение сообщения из общего канала
 		msg := <-broadcast
 
-		// Получение списка участников чата, которому предназначено сообщение
 		participants, err := GetChatParticipants(msg.ChatID, dbConnection)
 		if err != nil {
 			log.Printf("Error getting chat participants: %v", err)
 			continue
 		}
 
-		// Отправка сообщения всем участникам чата, кроме отправителя
 		clientsMu.Lock()
 		for client := range clients {
 			for _, participant := range participants {
@@ -172,14 +156,12 @@ func HandleMessages() {
 func GetChatParticipants(chatID string, db *sql.DB) ([]string, error) {
 	participants := make([]string, 0)
 
-	// Запрос к базе данных для получения участников чата
 	rows, err := db.Query("SELECT user1_id, user2_id FROM privatechat WHERE chat_id = ?", chatID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// Итерация по результатам запроса и добавление участников в список
 	for rows.Next() {
 		var user1ID, user2ID string
 		if err := rows.Scan(&user1ID, &user2ID); err != nil {

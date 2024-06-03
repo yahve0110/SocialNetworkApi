@@ -40,7 +40,6 @@ func GetGroupFeedHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // RetrieveGroupFeed retrieves both group events and group posts for a specific group
-// RetrieveGroupFeed retrieves both group events and group posts for a specific group
 func RetrieveGroupFeed(db *sql.DB, groupID string) ([]interface{}, error) {
 	// Retrieve group events
 	events, err := RetrieveGroupEvents(db, groupID)
