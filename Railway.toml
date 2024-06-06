@@ -1,0 +1,10 @@
+{
+  "services": {
+    "web": {
+      "dockerfile": "Dockerfile",
+      "envs": {
+        "GO_ENV": "production"
+      }
+    }
+  }
+}
